@@ -2,7 +2,8 @@
 AI Interview Taker is an application for the user who wants to prepare for interview but cant afford coaching, Developer of AI Interview makes sure that this application gives real interview feelings, developer is preparing hard to give soul of the interviewer to AI Interview Taker.
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/854e031a-bc29-4630-96cb-77ca26c0c4af" />
+  <img width="600" src="https://github.com/user-attachments/assets/854e031a-bc29-4630-96cb-77ca26c0c4af" />
+  <!-- <img src="https://github.com/user-attachments/assets/854e031a-bc29-4630-96cb-77ca26c0c4af" /> -->
 </p>
 
 ## Files
