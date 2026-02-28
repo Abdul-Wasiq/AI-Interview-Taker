@@ -189,6 +189,8 @@ def getResponse(cleanUserPrompt):
         print(f"Error: {e}")    
 
 
+
+
 while True:
     userInput = input("Enter prompt: ")
     cleanUserPrompt = cleanPrompt(userInput)
