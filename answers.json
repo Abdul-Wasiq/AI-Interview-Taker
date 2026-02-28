@@ -1,0 +1,72 @@
+{
+  "conversationHistory": [
+    {
+      "role": "assistant",
+      "content": "Hello, thank you for coming in today for the Backend Developer role. Can you start by introducing yourself?"
+    },
+    {
+      "role": "user",
+      "content": "hello Thanks for having me, I am Abdul Wasiq, and I am in 4th semester in SZABIST Karachi, my domain is python backend developer and I am good in API handling, FAST API and also postgreSQL."
+    },
+    {
+      "role": "assistant",
+      "content": "Can you explain a recent project you've worked on that demonstrates your skills in Python backend development, particularly with FAST API and PostgreSQL?"
+    },
+    {
+      "role": "user",
+      "content": "yeah I worked on chat bot named BrianAI, I handled multiple APIs and integrate them, I worked on sign up or login that when user enters email address or password then FAST API gets data fromfrontend and check in database and then return data and thats how userwill be able to see page with only their data, I am also working on AI Interview Taker and I also will work on AI image detector, quizk maker, AI whatsapp bot."
+    },
+    {
+      "role": "assistant",
+      "content": "Can you walk me through your thought process when designing the database schema for the BrianAI chatbot, and how you ensured data consistency and security with PostgreSQL?"
+    },
+    {
+      "role": "user",
+      "content": "okay, so first we will make simple and small database, it will look like word excel, and we will run queries to handle them, and if user enters prompt then first work is to generate unique keys, and then store in database and using FAST API when user clicks on that chat history then FAST API will get this data from database and show it on frontend,and bucket will be updated so that chat bot knows what conversation was happening, currently I am working on \"How to avoid load when conversation  becomes too much\"I mean API has too much load now, so currently I am working on it."
+    },
+    {
+      "role": "assistant",
+      "content": "That's a good approach to handling the database schema and data consistency. However, can you elaborate more on how you plan to optimize the API to avoid load when the conversation becomes too much, and what specific strategies you're exploring to address this issue?"
+    },
+    {
+      "role": "user",
+      "content": "I will break it in 5 to 6 last conversations to remember, because API cant handle 20 conversations because it will be slow and user doesnt like slow chat bot."
+    },
+    {
+      "role": "assistant",
+      "content": "Breaking down conversations into 5-6 last conversations may help with load, but how do you plan to implement this logic in your FAST API and PostgreSQL database, and what are the potential trade-offs in terms of data consistency and user experience?"
+    },
+    {
+      "role": "user",
+      "content": "I will update conversation after each 5 to 6 conversation, and after 5 to 6 conversation, it will work like when new conversation comes then past 6th conversation will be deleted and will be moved to trash bucket and new conversation will be added,I will remove it from memory of chat bot not from database."
+    },
+    {
+      "role": "assistant",
+      "content": "How do you plan to handle the scenario where a user wants to recall a conversation that has been moved to the trash bucket, and what measures will you take to ensure data persistence and recoverability in such cases?"
+    },
+    {
+      "role": "user",
+      "content": "To handle this scenario, I would implement a soft delete mechanism where moving a conversation to the trash does not permanently remove it from the database but instead updates a flag such as isTrashed = true along with a trashedAt timestamp. This allows the system to exclude trashed conversations from the main view while still keeping them stored for recovery. If a user wants to restore a conversation, the flag can simply be reversed. For data persistence and recoverability, I would ensure chats are stored in a structured and user-isolated manner (e.g., per user collection), implement scheduled cleanup for permanently deleting items after a defined retention period (e.g., 30 days), and maintain regular database backups to protect against accidental deletions, corruption, or system failures. This approach ensures both user flexibility and long-term data reliability."
+    },
+    {
+      "role": "assistant",
+      "content": "How do you plan to handle errors and exceptions in your FAST API application, and what logging mechanisms would you implement to monitor and troubleshoot issues?"
+    },
+    {
+      "role": "user",
+      "content": "In my FastAPI application, I would handle errors using structured exception handling with try/except blocks and FastAPI\u2019s global exception handlers to catch and standardize responses for common errors such as validation issues, authentication failures, and unexpected server exceptions. I would define custom exception classes for business logic errors and return consistent JSON responses with proper HTTP status codes to maintain API reliability and clarity for clients. For logging, I would implement Python\u2019s built-in logging module with different log levels (INFO, WARNING, ERROR, CRITICAL), log all incoming requests and key actions, and capture stack traces for unhandled exceptions. Logs would be written both to rotating log files and optionally to a centralized monitoring system (such as cloud logging or observability tools) to enable real-time monitoring, alerting, and easier troubleshooting in production environments."
+    },
+    {
+      "role": "assistant",
+      "content": "Can you explain how you would implement authentication and authorization in your FAST API application to secure access to sensitive data and endpoints?"
+    },
+    {
+      "role": "user",
+      "content": "To implement authentication and authorization in my FastAPI application, I would use OAuth2 with JWT (JSON Web Tokens) for secure, stateless authentication. During login, the user\u2019s credentials would be validated against a securely stored (hashed) password in the database using a strong hashing algorithm like bcrypt, and upon successful verification, the server would issue a signed JWT containing user identity and role claims with an expiration time. Protected endpoints would use FastAPI\u2019s dependency injection system to verify and decode the token, ensuring the request is authenticated before processing. For authorization, I would implement role-based access control (RBAC) by embedding roles (e.g., admin, user) inside the token and enforcing permission checks at the endpoint level to restrict access to sensitive operations. Additionally, I would enforce HTTPS, use token expiration and refresh tokens, and securely manage secret keys via environment variables to ensure overall application security."
+    }
+  ],
+  "categoryResults": [],
+  "currentPhase": "opening_greeting",
+  "currentCategoryIndex": 0,
+  "currentQuestionIndex": 0
+}
