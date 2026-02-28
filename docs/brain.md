@@ -22,3 +22,15 @@ The core function that:
 - Fetches interviewer identity from `interview_structure.json`
 - Passes current phase, conversation history, last question and last answer into a Groq API prompt
 - Allows the AI to track what has been covered, stay in character, and decide what to ask next
+- and in last ask question and get answer and then save in save Data.
+
+### `askQuestion()`
+- Step:01 (clear answers.json when start function clicked)
+- Step:02 (if (answers.json is clear then greet and save in answers.json))
+- Step:03 (else ask an other question but on the basis of previous questions)
+- Step: 3.0 (dont ask same questions)
+- Step: 3.1 (Question limit per category(max 3-4))
+- moveToNextCategory logic — actually move to next category when true
+- End condition — stop when all categories done
+
+
