@@ -41,3 +41,4 @@ The core function that:
 - Main goal is to know that how much user knows on that category, and expose user as much as possible,
 - and if user gave good answer in basic question then increase the level until user doesnt know the answer.
 - First always ask basic and easy questions.
+- judgement for result work in backend and give result conclusion.
