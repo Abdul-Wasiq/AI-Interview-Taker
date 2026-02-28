@@ -34,3 +34,10 @@ The core function that:
 - End condition — stop when all categories done
 
 
+### `Future Work` (Assigned on 2/28/2026)
+- you have to make a loop(NOT Programming Loop) where when user asks question, get answer, both saved, and then next but on the basis of last question and answer.
+- make it more natural like real Interview.
+- make judgement bucket where brain confirms that user is bad on this category so move to next category(if first question asked and user's answer is weak, then ask an other question but still weak response then cut points in backend silently and move to next category)
+- Main goal is to know that how much user knows on that category, and expose user as much as possible,
+- and if user gave good answer in basic question then increase the level until user doesnt know the answer.
+- First always ask basic and easy questions.
