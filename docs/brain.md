@@ -42,3 +42,4 @@ The core function that:
 - and if user gave good answer in basic question then increase the level until user doesnt know the answer.
 - First always ask basic and easy questions.
 - judgement for result work in backend and give result conclusion.
+- In last tell that is user ready for internship, job or what?
