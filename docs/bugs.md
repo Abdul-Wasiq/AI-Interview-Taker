@@ -40,3 +40,5 @@ Show users how they improved compared to their last interview — e.g., *"Last t
 
 ## User Profile Before Interview Starts
 Ask experience level, technologies used, and the role they're applying for. Personalize every interview based on this — a React developer and a Python developer should get completely different interviews.
+
+## use introduction like a data to use to ask questions
