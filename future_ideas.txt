@@ -1,3 +1,5 @@
 1- pop up box for code like debugging
 2- Add picture of real person who is the interviewer 
 3- Add google, face book etc interview types
+4- I realized that when I paste answer from GPT then it says excellent so "excellent" means that it can be AI.
+ 

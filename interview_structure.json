@@ -1,12 +1,11 @@
 {
   "interviewer": {
-    "name": "Rajesh Kumar",
-    "title": "Technical Lead - Backend Development",
+    "name": "Ethan Thompson",
+    "title": "Senior Backend Developer",
     "experience_years": 10,
-    "company": "TechnoSphere Solutions",
-    "city": "Bangalore",
-    "personality_trait": "direct",
-    "opening_greeting": "Hello, thank you for coming in today for the Backend Developer role. Can you start by introducing yourself?"
+    "company": "NovaTech Inc.",
+    "city": "San Francisco",
+    "opening_greeting": "Hello, thank you for coming in today to discuss the Python Backend Developer position at NovaTech Inc. I'm excited to learn more about your experience with Python, Fast API, and PostgreSQL. Can you start by introducing yourself and telling me a little about your background?"
   },
   "phases": {
     "phase1_introduction": [
@@ -16,12 +15,12 @@
           {
             "id": 1,
             "difficulty": "beginner",
-            "question": "What sparked your interest in Python as a backend development language?"
+            "question": "What is your experience with Python, and how do you think it's used in backend development?"
           },
           {
             "id": 2,
             "difficulty": "beginner",
-            "question": "Can you share a personal project where you used Python for backend development?"
+            "question": "Can you explain the difference between a monolithic architecture and a microservices architecture in backend development?"
           }
         ]
       }
@@ -33,22 +32,72 @@
           {
             "id": 1,
             "difficulty": "beginner",
-            "question": "How does Python support asynchronous programming in backend development?"
+            "question": "What are the advantages of using Python for backend development?"
           },
           {
             "id": 2,
             "difficulty": "easy-medium",
-            "question": "What are some key differences between Python 2 and Python 3 for backend development?"
+            "question": "How do you handle errors and exceptions in Python?"
           },
           {
             "id": 3,
             "difficulty": "medium",
-            "question": "How would you handle errors and exceptions in a Python backend application?"
+            "question": "Can you explain the concept of dependency injection in Python?"
           },
           {
             "id": 4,
             "difficulty": "medium-hard",
-            "question": "Can you explain how you would optimize the performance of a Python backend application?"
+            "question": "How do you optimize the performance of a Python application?"
+          }
+        ]
+      },
+      {
+        "category": "Fast API",
+        "questions": [
+          {
+            "id": 1,
+            "difficulty": "beginner",
+            "question": "What is Fast API, and how does it differ from other Python web frameworks?"
+          },
+          {
+            "id": 2,
+            "difficulty": "easy-medium",
+            "question": "How do you handle authentication and authorization in Fast API?"
+          },
+          {
+            "id": 3,
+            "difficulty": "medium",
+            "question": "Can you explain the concept of asynchronous programming in Fast API?"
+          },
+          {
+            "id": 4,
+            "difficulty": "medium-hard",
+            "question": "How do you deploy a Fast API application to a production environment?"
+          }
+        ]
+      },
+      {
+        "category": "PostgreSQL",
+        "questions": [
+          {
+            "id": 1,
+            "difficulty": "beginner",
+            "question": "What is PostgreSQL, and how does it differ from other relational databases?"
+          },
+          {
+            "id": 2,
+            "difficulty": "easy-medium",
+            "question": "How do you design a database schema for a PostgreSQL database?"
+          },
+          {
+            "id": 3,
+            "difficulty": "medium",
+            "question": "Can you explain the concept of indexing in PostgreSQL?"
+          },
+          {
+            "id": 4,
+            "difficulty": "medium-hard",
+            "question": "How do you optimize the performance of a PostgreSQL database?"
           }
         ]
       },
@@ -58,97 +107,97 @@
           {
             "id": 1,
             "difficulty": "beginner",
-            "question": "What is REST, and how does it relate to API design in backend development?"
+            "question": "What is an API, and how do you handle API requests and responses in Python?"
           },
           {
             "id": 2,
             "difficulty": "easy-medium",
-            "question": "How would you implement API rate limiting in a Python backend application?"
+            "question": "How do you handle API errors and exceptions in Python?"
           },
           {
             "id": 3,
             "difficulty": "medium",
-            "question": "Can you describe a scenario where you would use API caching in a backend application?"
+            "question": "Can you explain the concept of API caching in Python?"
           },
           {
             "id": 4,
             "difficulty": "medium-hard",
-            "question": "How would you handle API versioning in a Python backend application?"
+            "question": "How do you secure an API from common web vulnerabilities?"
           }
         ]
       },
       {
-        "category": "FAST API",
+        "category": "System Design",
         "questions": [
           {
             "id": 1,
             "difficulty": "beginner",
-            "question": "What is FAST API, and how does it compare to Flask or Django for backend development?"
+            "question": "Can you explain the concept of system design, and how do you approach designing a system?"
           },
           {
             "id": 2,
             "difficulty": "easy-medium",
-            "question": "How would you implement authentication with FAST API in a Python backend application?"
+            "question": "How do you handle scalability in system design?"
           },
           {
             "id": 3,
             "difficulty": "medium",
-            "question": "Can you explain how to use FAST API's built-in support for asynchronous programming in a backend application?"
+            "question": "Can you explain the concept of load balancing in system design?"
           },
           {
             "id": 4,
             "difficulty": "medium-hard",
-            "question": "How would you optimize the performance of a FAST API backend application?"
+            "question": "How do you handle fault tolerance in system design?"
           }
         ]
       },
       {
-        "category": "SQL Database",
+        "category": "Best Practices",
         "questions": [
           {
             "id": 1,
             "difficulty": "beginner",
-            "question": "What are some key differences between SQL and NoSQL databases for backend development?"
+            "question": "What are some best practices for writing clean and readable code in Python?"
           },
           {
             "id": 2,
             "difficulty": "easy-medium",
-            "question": "How would you design a database schema for a Python backend application using SQL?"
+            "question": "How do you handle code reviews, and what are some best practices for giving and receiving feedback?"
           },
           {
             "id": 3,
             "difficulty": "medium",
-            "question": "Can you explain how to implement database transactions in a Python backend application using SQL?"
+            "question": "Can you explain the concept of testing in Python, and how do you approach writing tests?"
           },
           {
             "id": 4,
             "difficulty": "medium-hard",
-            "question": "How would you optimize the performance of database queries in a Python backend application using SQL?"
+            "question": "How do you handle continuous integration and continuous deployment in Python?"
           }
         ]
       },
       {
-        "category": "System Design and Architecture",
+        "category": "Troubleshooting",
         "questions": [
           {
             "id": 1,
             "difficulty": "beginner",
-            "question": "What is a microservices architecture, and how does it relate to backend development?"
+            "question": "How do you approach debugging a Python application?"
           },
           {
             "id": 2,
             "difficulty": "easy-medium",
-            "question": "How would you design a system for scaling a Python backend application?"
+            "question": "Can you explain the concept of logging in Python, and how do you approach logging errors?"
           },
           {
             "id": 3,
             "difficulty": "medium",
-            "question": "Can you describe a scenario where you would use a message queue in a backend application?"
+            "question": "How do you handle errors and exceptions in a Python application?"
           },
           {
             "id": 4,
             "difficulty": "medium-hard",
-            "question": "How would you implement a load balancer in a Python backend application?"
+            "question": "Can you explain the concept of monitoring in Python, and how do you approach monitoring a Python application?"
           }
         ]
       }
@@ -160,7 +209,7 @@
           {
             "id": 1,
             "difficulty": "beginner",
-            "question": "Is there anything you'd like to ask me about the company or the role?"
+            "question": "Do you have any questions for me about the company or the position?"
           }
         ]
       }

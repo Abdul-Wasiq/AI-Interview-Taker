@@ -193,10 +193,21 @@ def getResponse(cleanUserPrompt):
 
 while True:
     userInput = input("Enter prompt: ")
+    print("What level are you preparing for?")
+    print("1. Internship")
+    print("2. Junior Developer")
+    print("3. Mid Level")
+    print("4. Senior Developer")
+
+    level = input("Enter 1-4: ")
+
     cleanUserPrompt = cleanPrompt(userInput)
 
     if "UNCLEAR_INTENT" in cleanUserPrompt:
         print("Please Enter Correct Input\n")
     else:
         getResponse(cleanUserPrompt)
+
+        with open('user_background.json', 'w') as file:
+            json.dump({"userPrompt": userInput,"level": level}, file, indent=2) 
         break
