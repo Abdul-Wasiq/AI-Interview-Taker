@@ -42,6 +42,7 @@ def greeting():
     answer = userAnswer()
     saveData(greetingText, answer)
 
+# check API limit exceed or not 
 apis = [os.getenv("api1"), os.getenv("api2")]
 
 def getCurrAPI():
@@ -58,12 +59,27 @@ def rotateAPI(currIndx):
 
 def checkandRotate(response):
     remainingTokens = int(response.headers.get("x-ratelimit-remaining-tokens", 99999))
+    remainingRequests = int(response.headers.get("x-ratelimit-remaining-requests", 99999))
 
-    if (remainingTokens < 50000):
+    # 1- Remaining Tokens
+    if (remainingTokens < 5000):
+        print("[DEV_Backend]: ------ALERT-----Low Tokens")
+        currIndx = getCurrAPI()
+        rotateAPI(currIndx)
+    
+    # 2- remaning requests
+    if (remainingRequests < 50):
+        print("[DEV_Backend: --------ALERT--------Low Requests]")
+        currIndx = getCurrAPI()
+        rotateAPI(currIndx)
+    # 3- status code
+    if (response.status_code == 429 or response.ok != True):
+        print("[DEV_Backend]: -------ALERT------- unexpected Error")
         currIndx = getCurrAPI()
         rotateAPI(currIndx)
 
 
+# ASKING QUESTION FUNCTION
 def askQuestion():
     currIndx = getCurrAPI()
     brainAPI = apis[currIndx]
@@ -196,6 +212,7 @@ def askQuestion():
     nextQuestion = parsedResponse["nextQuestion"]
 
     usage = resInJSON["usage"]
+    print(f" [DEV]Tokens used this turn: {resInJSON['usage']['total_tokens']}")
 
     saveJudgment(lastQuestion, lastAnswer, judgment)
     print(f"\nInterviewer: {acknowledgment} {nextQuestion}\n")
