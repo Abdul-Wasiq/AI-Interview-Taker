@@ -3,3 +3,12 @@
 3- Add google, face book etc interview types
 4- I realized that when I paste answer from GPT then it says excellent so "excellent" means that it can be AI.
 5- Add something in box like(interview preparation for google, or DSA mock interview) which is usuall famous around the world 
+6- User books a mock interview slot → Google Calendar API creates event → Google Meet link auto generated → User gets email/notification → At scheduled time, they join Meet → Your AI interviewer is already there waiting
+7- user gets email after completing the interview
+8- Free users get: score, weak areas, email
+   Pro users get: "Here's what the interviewer actually thought when you said that" like showing green signal etc
+9- Give feedbacks and also weak area(video,website) suggestions
+10- excellent/good/weak/wrong is part of pro subscription
+11- Natural end: When phase 3 closing is completed. You already have the phase structure in your JSON, so you can track which phase you're in and when phase 3's questions are exhausted → end.
+12. Early termination: If the candidate is clearly not ready. Something like — if you get 3 consecutive "wrong" judgments → interviewer wraps up early naturally. Just like real life where the interviewer starts closing down after a bad stretch.
+13- red = weak areas, yellow = normal areas, green= good areas

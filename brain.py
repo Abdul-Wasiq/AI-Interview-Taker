@@ -42,7 +42,7 @@ def greeting():
     answer = userAnswer()
     saveData(greetingText, answer)
 
-apis = [os.getenv("api1"), os.getenv("api2")]
+apis = [os.getenv("api1"), os.getenv("api2"), os.getenv("api3"), os.getenv("api4"), os.getenv("api5"), os.getenv("api6"),os.getenv("api7"),os.getenv("api8"),os.getenv("api9"),os.getenv("api10")]
 
 def getCurrAPI():
     with open('api_data.json', 'r') as file:
@@ -56,18 +56,34 @@ def rotateAPI(currIndx):
         json.dump({"api": f"api{newIndx+1}", "index": newIndx}, file)
     print(f"[DEV_BACKEND]: ROTATE! NOW USING API{newIndx + 1}")
 
-def checkandRotate(response):
-    remainingTokens = int(response.headers.get("x-ratelimit-remaining-tokens", 99999))
-
-    if (remainingTokens < 50000):
+def makeRequest(url, headers, data):
+    """Make request, auto-rotate if rate limited, retry up to 10 times"""
+    for attempt in range(len(apis)):
         currIndx = getCurrAPI()
-        rotateAPI(currIndx)
+        brainAPI = apis[currIndx]
+        
+        headers["Authorization"] = f"Bearer {brainAPI}"
+        
+        response = requests.post(url, headers=headers, json=data)
+        resInJSON = response.json()
+        
+        if "choices" in resInJSON:
+            # Success! Also check if tokens are getting low for NEXT call
+            remainingTokens = int(response.headers.get("x-ratelimit-remaining-tokens", 99999))
+            if remainingTokens < 5000:
+                print(f"[DEV_BACKEND]: API{currIndx+1} low on tokens, rotating for next call...")
+                rotateAPI(currIndx)
+            return resInJSON
+        else:
+            print(f"[DEV_BACKEND]: API{currIndx+1} failed ({resInJSON.get('error', {}).get('message', 'unknown error')}), rotating...")
+            rotateAPI(currIndx)
+    
+    raise Exception("All APIs exhausted. Try again later.")
 
-
-def askQuestion():
+def askQuestion(questionCount): 
     currIndx = getCurrAPI()
     brainAPI = apis[currIndx]
-      
+  
     url = "https://api.groq.com/openai/v1/chat/completions"
 
     headers = {
@@ -81,10 +97,12 @@ def askQuestion():
     prompt = user_input["userPrompt"]
     level = user_input["level"]
 
+    
     with open('answers.json', 'r') as file:
         answersData = json.load(file)
     
-    conversationHistory = answersData["conversationHistory"]
+    # last 6 questions and answers
+    conversationHistory = answersData["conversationHistory"][-16:]
     lastQuestion = conversationHistory[-2]["content"]
     lastAnswer = conversationHistory[-1]["content"]
 
@@ -179,14 +197,20 @@ def askQuestion():
             "judgment": "excellent/good/weak/wrong",
             "acknowledgment": "one short human reaction — or empty string if you're going cold into the question",
             "nextQuestion": "your next question, phrased how a real person would say it out loud"
-        }}"""
+        }}
+                QUESTION TRACKING:
+        - You have asked {questionCount} out of 9 questions
+        - Questions remaining: {9 - questionCount}
+        - DISTRIBUTE questions across phases:
+        * phase1_introduction: questions 1-2
+        * phase2_core: questions 3-8
+        * phase3_closing: question 9
+        - YOU MUST cover all phases — do not spend too many questions on one topic
+        """
         }]
     }
 
-    response = requests.post(url, headers=headers, json=data)
-    #check should I do rotation or not
-    checkandRotate(response)
-    resInJSON = response.json()
+    resInJSON = makeRequest(url, headers, data)
     rawContent = resInJSON["choices"][0]["message"]["content"]
     rawContent = rawContent.replace("```json", "").replace("```", "").strip()
 
@@ -195,12 +219,20 @@ def askQuestion():
     acknowledgment = parsedResponse["acknowledgment"]
     nextQuestion = parsedResponse["nextQuestion"]
 
-    usage = resInJSON["usage"]
-
     saveJudgment(lastQuestion, lastAnswer, judgment)
     print(f"\nInterviewer: {acknowledgment} {nextQuestion}\n")
     answer = userAnswer()
     saveData(nextQuestion, answer)
+
+    if (parsedResponse.get("end") == True):
+        print(f"\nInterviewer: {parsedResponse['acknowledgment']} \n")
+        return True
+
+def askGoodByeQuestion():
+    print("Interviewer: Do you have any question?")
+
+def goodbye():
+    print("Goodbye")
 
 def start():
     freshState = {
@@ -212,7 +244,12 @@ def start():
 
     greeting()
 
-    while True:
-        askQuestion()
+    for questionCount in range(1, 10):
+        print(questionCount)
+        askQuestion(questionCount)
+
+    askGoodByeQuestion()
+    goodbye()
+
 
 start()
