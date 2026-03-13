@@ -1,0 +1,63 @@
+{
+    "overallScore": 58,
+    "levelAssessment": "Junior",
+    "badge": "Introduction to Fast API",
+    "improvement": "-14 from average",
+    "strongAreas": [
+        {
+            "topic": "Introduction and Background",
+            "reason": "Good self-introduction and background explanation"
+        },
+        {
+            "topic": "Error Handling",
+            "reason": "Proper use of try-except blocks and response.ok()"
+        }
+    ],
+    "weakAreas": [
+        {
+            "topic": "System Architecture",
+            "reason": "Lack of knowledge about monolithic and microservices architecture"
+        },
+        {
+            "topic": "Validation and Security",
+            "reason": "Inadequate understanding of secure data storage and retrieval practices"
+        }
+    ],
+    "redFlags": [
+        {
+            "moment": "Question 3",
+            "reason": "Lack of knowledge about monolithic and microservices architecture"
+        },
+        {
+            "moment": "Question 9",
+            "reason": "Insecure data storage and retrieval practices explained"
+        }
+    ],
+    "improvementTips": [
+        "Study system architecture patterns, including monolithic and microservices",
+        "Learn about secure data storage and retrieval practices, such as password hashing and salting",
+        "Improve knowledge of Fast API features and best practices"
+    ],
+    "breakdown": [
+        {
+            "question": "Introduction and Background",
+            "color": "green",
+            "reason": "Good"
+        },
+        {
+            "question": "Error Handling",
+            "color": "green",
+            "reason": "Proper use of try-except blocks and response.ok()"
+        },
+        {
+            "question": "System Architecture",
+            "color": "red",
+            "reason": "Lack of knowledge"
+        },
+        {
+            "question": "Validation and Security",
+            "color": "red",
+            "reason": "Inadequate understanding"
+        }
+    ]
+}

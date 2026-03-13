@@ -12,3 +12,4 @@
 11- Natural end: When phase 3 closing is completed. You already have the phase structure in your JSON, so you can track which phase you're in and when phase 3's questions are exhausted → end.
 12. Early termination: If the candidate is clearly not ready. Something like — if you get 3 consecutive "wrong" judgments → interviewer wraps up early naturally. Just like real life where the interviewer starts closing down after a bad stretch.
 13- red = weak areas, yellow = normal areas, green= good areas
+14- instead of "It was great talking with you. Our team will be in touch shortly. Best of luck!" say "you will get email in 5 mins and send email in 5mins"

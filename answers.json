@@ -6,7 +6,7 @@
     },
     {
       "role": "user",
-      "content": "hi"
+      "content": "hello Thanks for having me, My name is Abdul Wasiq. and I am 22 years olf, currently I am studying at SZABIST Karachi in 4th semester in software Engineering, and I worked in python for more than 2 years."
     },
     {
       "role": "assistant",
@@ -14,118 +14,126 @@
     },
     {
       "role": "user",
-      "content": "Hi, I\u2019m Abdul Wasiq, a Software Engineering student at SZABIST University. I build backend systems using Python and have experience creating APIs with FastAPI and managing data in PostgreSQL. I\u2019ve worked on projects like an AI chatbot, focusing on authentication, data handling, and scalable backend design."
+      "content": "we use python in backend using some libraries or frameworks, I worked in FAST API, and potgreSQL."
     },
     {
       "role": "assistant",
-      "content": "You mentioned working on an AI chatbot project, can you walk me through how you handled authentication and data handling in that project?"
+      "content": "Can you explain the difference between a monolithic architecture and a microservices architecture in backend development?"
     },
     {
       "role": "user",
-      "content": "In the AI chatbot project, I used JWT-based authentication to securely manage user logins, with passwords hashed and stored in PostgreSQL. For data handling, I structured tables for users, chats, and messages, ensuring proper relationships and indexes for performance. The APIs built with FastAPI validated user roles and ensured that each user could only access their own data, keeping the system both secure and efficient."
+      "content": "I am listening it first time but I am curious to know about it."
     },
     {
       "role": "assistant",
-      "content": "Can you explain the difference between a monolithic architecture and a microservices architecture in backend development, and how you would decide which one to use for a given project?"
+      "content": "Let's move on to something you are familiar with, what are the advantages of using Python for backend development?"
     },
     {
       "role": "user",
-      "content": "A monolithic architecture is where the entire backend is built as a single, unified application, making it simpler to develop and deploy initially but harder to scale or update individual parts. A microservices architecture splits the backend into smaller, independent services, each handling a specific function, which improves scalability and maintainability but adds complexity in communication and deployment. I\u2019d choose monolithic for smaller projects or MVPs for faster development, and microservices for larger systems that require independent scaling, team separation, or high availability."
+      "content": "the biggest advantage of using python in backend is simple syntax, python has simple syntax so it is easy to manage data and other things like communicating between frontend and backend."
     },
     {
       "role": "assistant",
-      "content": "What are the advantages of using Python for backend development, and how do you think it compares to other languages you've worked with?"
+      "content": "How do you handle errors and exceptions in Python, especially when working with APIs like Fast API?"
     },
     {
       "role": "user",
-      "content": "Python is great for backend development because it\u2019s easy to read, write, and maintain, has a rich ecosystem of libraries, and frameworks like FastAPI and Django make building APIs fast and efficient. Compared to languages like Java or C++, Python allows for rapid prototyping and cleaner code, though it can be slower in raw performance. Its simplicity and strong community support make it ideal for building scalable backend systems while staying productive."
+      "content": "good question, so when I started working in python and I was getting errors like 404 etc and because of that error my whole program was crashing so I searched about it and learnt about try and except and also built in functions like response.ok() which means that if response is between 200 to 299 then it is good otherwise throw in exception and print error without crashing the program."
     },
     {
       "role": "assistant",
-      "content": "How do you handle errors and exceptions in Python, especially when working with APIs and databases like PostgreSQL?"
+      "content": "How did you decide to use try-except blocks versus built-in functions like response.ok() in your Fast API projects?"
     },
     {
       "role": "user",
-      "content": "I handle errors in Python by using try\u2013except blocks around critical operations like API calls or database queries. For example, when accessing PostgreSQL, I catch connection errors, missing records, or query failures, and raise appropriate responses using FastAPI\u2019s HTTPException with meaningful status codes like 400 or 404. I also log all errors with timestamps for debugging while ensuring sensitive data like passwords or tokens are never exposed. This keeps the application stable and secure."
+      "content": "okay so for example when user enters something that is unexpectable during login or sign up or when user user clicks to go on other page but network is really slow."
     },
     {
       "role": "assistant",
-      "content": "Can you walk me through how you optimize the performance of a Python application, especially when it's connected to a PostgreSQL database?"
+      "content": "Can you walk me through how you've used Fast API to handle a specific API request, like user authentication or data retrieval?"
     },
     {
       "role": "user",
-      "content": "To optimize a Python app with PostgreSQL, I start by profiling queries using EXPLAIN to find slow operations. I add indexes on frequently queried columns, select only needed fields instead of SELECT *, and avoid unnecessary joins. In Python, I use async calls with FastAPI to handle multiple requests concurrently and batch database operations when possible. I also implement caching for frequently accessed data using Redis, which reduces database load and improves overall response time."
+      "content": "yeah I used Fast API to handle a specific request like for example when user logins then if that data exists in data base then give access to data and show on page."
     },
     {
       "role": "assistant",
-      "content": "How do you handle API errors and exceptions in Python, specifically when working with FastAPI and PostgreSQL?"
+      "content": "How do you handle validation for user input in your Fast API projects, especially when dealing with sensitive data like passwords or credit card numbers?"
     },
     {
       "role": "user",
-      "content": "In FastAPI, I handle API errors by wrapping database calls in try\u2013except blocks and raising HTTPException with appropriate status codes like 400, 401, or 404 when something goes wrong. For example, if a user tries to access a non-existent record in PostgreSQL, the API returns a 404 instead of crashing. I also log errors with timestamps for debugging, while making sure sensitive data such as passwords or tokens are never exposed in responses. This approach keeps the API stable, secure, and user-friendly."
+      "content": "so first I will try to save it in postgreSQL, and try to make it in coded language so that even some one access that password then they should not be able to get password and able to login by using that password."
     },
     {
       "role": "assistant",
-      "content": "Can you tell me about a time when you had to debug a difficult issue in one of your projects, and how you went about resolving it?"
+      "content": "Can you explain how you specifically use PostgreSQL to store and retrieve sensitive data, like passwords, in a way that's secure and follows best practices?"
     },
     {
       "role": "user",
-      "content": "In my AI chatbot project, I ran into an issue where user theme settings kept resetting on login, even though they were saved correctly in localStorage. I started by debugging the frontend and backend separately, then added console logs and checked API responses. I discovered that the theme was not being reapplied correctly on page load. After fixing the logic to read and apply the saved theme properly and testing across browsers, the issue was resolved, and the user experience became consistent and reliable."
+      "content": "okay so we use keys, and save whole data not in tables but on other and different tables whose keys are being changed after each hour, and only admin can access these keys to access password."
     },
     {
       "role": "assistant",
-      "content": "Now, let's move on to system design. Can you explain how you would handle scalability in a system, particularly when dealing with a high volume of API requests?"
+      "content": "Can you tell me about a time when you had to optimize the performance of a PostgreSQL database, what steps did you take?"
     },
     {
       "role": "user",
-      "content": "To handle scalability, I would run multiple FastAPI instances behind a load balancer to distribute traffic evenly. I\u2019d use PostgreSQL with proper indexing and, if needed, read replicas to handle database load. Frequently accessed data could be cached in Redis to reduce database hits. I\u2019d also implement async endpoints to handle many requests concurrently and set up auto-scaling so the system can add instances when traffic spikes, ensuring the API remains fast and reliable under high load."
+      "content": "I optimize the postgreSQL for example I was always feeling burn out by looking at messy database but I didnt know how to handle them, so I have learnt by myself that we should divide this data for example user A should have different database and when user B logins then he/she has whole different database so that they dont mix with each other and should not be able to access other user even with mistake."
+    },
+    {
+      "role": "assistant",
+      "content": "I appreciate your honesty, but I'm a bit concerned that the approach you described might not be the most efficient way to optimize database performance. It's great that you're thinking about data separation, but there are often more effective methods to achieve that goal.\n\nThank you so much for coming in today and sharing your experiences with me, I really appreciate the time you took to be here. Before we wrap up, do you have any questions for me - about the role, the team, or the company?"
+    },
+    {
+      "role": "user",
+      "content": "yeah I have question, so can you tell me that in 2026 in AI era, I have weakness and that is I dont fully copy the code from AI, and I write code by myself and disadvantage is that I do work but it takes time and any vibe coder cando that work in 1/3 of my time, but I understand every thing deeply before writing code manually, so my question is that what If I work slowly little bit then will it be issue in your company if I get a job in this company?"
     }
   ],
   "categoryResults": [
     {
       "question": "Hello, thank you for coming in today to discuss the Python Backend Developer position at NovaTech Inc. I'm excited to learn more about your experience with Python, Fast API, and PostgreSQL. Can you start by introducing yourself and telling me a little about your background?",
-      "answer": "hi",
-      "judgment": "weak"
+      "answer": "hello Thanks for having me, My name is Abdul Wasiq. and I am 22 years olf, currently I am studying at SZABIST Karachi in 4th semester in software Engineering, and I worked in python for more than 2 years.",
+      "judgment": "good"
     },
     {
       "question": "What's your experience with Python, and how do you think it's used in backend development?",
-      "answer": "Hi, I\u2019m Abdul Wasiq, a Software Engineering student at SZABIST University. I build backend systems using Python and have experience creating APIs with FastAPI and managing data in PostgreSQL. I\u2019ve worked on projects like an AI chatbot, focusing on authentication, data handling, and scalable backend design.",
+      "answer": "we use python in backend using some libraries or frameworks, I worked in FAST API, and potgreSQL.",
+      "judgment": "weak"
+    },
+    {
+      "question": "Can you explain the difference between a monolithic architecture and a microservices architecture in backend development?",
+      "answer": "I am listening it first time but I am curious to know about it.",
+      "judgment": "weak"
+    },
+    {
+      "question": "Let's move on to something you are familiar with, what are the advantages of using Python for backend development?",
+      "answer": "the biggest advantage of using python in backend is simple syntax, python has simple syntax so it is easy to manage data and other things like communicating between frontend and backend.",
       "judgment": "good"
     },
     {
-      "question": "You mentioned working on an AI chatbot project, can you walk me through how you handled authentication and data handling in that project?",
-      "answer": "In the AI chatbot project, I used JWT-based authentication to securely manage user logins, with passwords hashed and stored in PostgreSQL. For data handling, I structured tables for users, chats, and messages, ensuring proper relationships and indexes for performance. The APIs built with FastAPI validated user roles and ensured that each user could only access their own data, keeping the system both secure and efficient.",
+      "question": "How do you handle errors and exceptions in Python, especially when working with APIs like Fast API?",
+      "answer": "good question, so when I started working in python and I was getting errors like 404 etc and because of that error my whole program was crashing so I searched about it and learnt about try and except and also built in functions like response.ok() which means that if response is between 200 to 299 then it is good otherwise throw in exception and print error without crashing the program.",
       "judgment": "good"
     },
     {
-      "question": "Can you explain the difference between a monolithic architecture and a microservices architecture in backend development, and how you would decide which one to use for a given project?",
-      "answer": "A monolithic architecture is where the entire backend is built as a single, unified application, making it simpler to develop and deploy initially but harder to scale or update individual parts. A microservices architecture splits the backend into smaller, independent services, each handling a specific function, which improves scalability and maintainability but adds complexity in communication and deployment. I\u2019d choose monolithic for smaller projects or MVPs for faster development, and microservices for larger systems that require independent scaling, team separation, or high availability.",
-      "judgment": "good"
+      "question": "How did you decide to use try-except blocks versus built-in functions like response.ok() in your Fast API projects?",
+      "answer": "okay so for example when user enters something that is unexpectable during login or sign up or when user user clicks to go on other page but network is really slow.",
+      "judgment": "weak"
     },
     {
-      "question": "What are the advantages of using Python for backend development, and how do you think it compares to other languages you've worked with?",
-      "answer": "Python is great for backend development because it\u2019s easy to read, write, and maintain, has a rich ecosystem of libraries, and frameworks like FastAPI and Django make building APIs fast and efficient. Compared to languages like Java or C++, Python allows for rapid prototyping and cleaner code, though it can be slower in raw performance. Its simplicity and strong community support make it ideal for building scalable backend systems while staying productive.",
-      "judgment": "good"
+      "question": "Can you walk me through how you've used Fast API to handle a specific API request, like user authentication or data retrieval?",
+      "answer": "yeah I used Fast API to handle a specific request like for example when user logins then if that data exists in data base then give access to data and show on page.",
+      "judgment": "weak"
     },
     {
-      "question": "How do you handle errors and exceptions in Python, especially when working with APIs and databases like PostgreSQL?",
-      "answer": "I handle errors in Python by using try\u2013except blocks around critical operations like API calls or database queries. For example, when accessing PostgreSQL, I catch connection errors, missing records, or query failures, and raise appropriate responses using FastAPI\u2019s HTTPException with meaningful status codes like 400 or 404. I also log all errors with timestamps for debugging while ensuring sensitive data like passwords or tokens are never exposed. This keeps the application stable and secure.",
-      "judgment": "good"
+      "question": "How do you handle validation for user input in your Fast API projects, especially when dealing with sensitive data like passwords or credit card numbers?",
+      "answer": "so first I will try to save it in postgreSQL, and try to make it in coded language so that even some one access that password then they should not be able to get password and able to login by using that password.",
+      "judgment": "weak"
     },
     {
-      "question": "Can you walk me through how you optimize the performance of a Python application, especially when it's connected to a PostgreSQL database?",
-      "answer": "To optimize a Python app with PostgreSQL, I start by profiling queries using EXPLAIN to find slow operations. I add indexes on frequently queried columns, select only needed fields instead of SELECT *, and avoid unnecessary joins. In Python, I use async calls with FastAPI to handle multiple requests concurrently and batch database operations when possible. I also implement caching for frequently accessed data using Redis, which reduces database load and improves overall response time.",
-      "judgment": "good"
-    },
-    {
-      "question": "How do you handle API errors and exceptions in Python, specifically when working with FastAPI and PostgreSQL?",
-      "answer": "In FastAPI, I handle API errors by wrapping database calls in try\u2013except blocks and raising HTTPException with appropriate status codes like 400, 401, or 404 when something goes wrong. For example, if a user tries to access a non-existent record in PostgreSQL, the API returns a 404 instead of crashing. I also log errors with timestamps for debugging, while making sure sensitive data such as passwords or tokens are never exposed in responses. This approach keeps the API stable, secure, and user-friendly.",
-      "judgment": "good"
-    },
-    {
-      "question": "Can you tell me about a time when you had to debug a difficult issue in one of your projects, and how you went about resolving it?",
-      "answer": "In my AI chatbot project, I ran into an issue where user theme settings kept resetting on login, even though they were saved correctly in localStorage. I started by debugging the frontend and backend separately, then added console logs and checked API responses. I discovered that the theme was not being reapplied correctly on page load. After fixing the logic to read and apply the saved theme properly and testing across browsers, the issue was resolved, and the user experience became consistent and reliable.",
-      "judgment": "good"
+      "question": "Can you explain how you specifically use PostgreSQL to store and retrieve sensitive data, like passwords, in a way that's secure and follows best practices?",
+      "answer": "okay so we use keys, and save whole data not in tables but on other and different tables whose keys are being changed after each hour, and only admin can access these keys to access password.",
+      "judgment": "weak"
     }
   ]
 }

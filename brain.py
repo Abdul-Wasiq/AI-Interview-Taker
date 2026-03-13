@@ -80,15 +80,13 @@ def makeRequest(url, headers, data):
     
     raise Exception("All APIs exhausted. Try again later.")
 
-def askQuestion(questionCount): 
-    currIndx = getCurrAPI()
-    brainAPI = apis[currIndx]
-  
+def askQuestion(questionCount):
+    
     url = "https://api.groq.com/openai/v1/chat/completions"
 
     headers = {
         "Content-Type": "application/json",
-        "Authorization": f"Bearer {brainAPI}"
+        "Authorization": ""
     }
 
     structure = loadInterview()
@@ -210,7 +208,7 @@ def askQuestion(questionCount):
         }]
     }
 
-    resInJSON = makeRequest(url, headers, data)
+    resInJSON = makeRequest(url, headers, data) # same as requests.post()
     rawContent = resInJSON["choices"][0]["message"]["content"]
     rawContent = rawContent.replace("```json", "").replace("```", "").strip()
 
@@ -228,11 +226,83 @@ def askQuestion(questionCount):
         print(f"\nInterviewer: {parsedResponse['acknowledgment']} \n")
         return True
 
-def askGoodByeQuestion():
-    print("Interviewer: Do you have any question?")
+def closeInterview():
+    url = "https://api.groq.com/openai/v1/chat/completions"
 
-def goodbye():
-    print("Goodbye")
+    structure = loadInterview()
+    with open('answers.json', 'r') as file: 
+        answersData = json.load(file)
+
+    conversationHistory = answersData["conversationHistory"][-10:]
+    lastQuestion = conversationHistory[-2]["content"]
+    lastAnswer = conversationHistory[-1]["content"]
+
+    name = structure["interviewer"]["name"]
+    title = structure["interviewer"]["title"]
+    experience = structure["interviewer"]["experience_years"]
+    personality = structure["interviewer"].get("personality_trait") or structure["interviewer"].get("personality") or "professional"
+
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": ""
+    }
+
+    # Step 1: React to the last answer, wrap up warmly, and ask if they have any questions
+    data = {
+        "model": "llama-3.3-70b-versatile",
+        "messages": [{
+            "role": "user",
+            "content": f"""You are {name}, a {title} with {experience} years of experience. Your personality: {personality}.
+
+The interview questions are now done. The candidate just answered your last question.
+
+Last question you asked: "{lastQuestion}"
+Candidate's answer: "{lastAnswer}"
+
+Your job now:
+1. React briefly and naturally to their last answer (1-2 sentences max)
+2. Thank them warmly for coming in and for their time — sound genuine, not scripted
+3. Then ask: "Before we wrap up, do you have any questions for me — about the role, the team, or the company?"
+
+Sound like a real human. Be warm and direct.
+Return ONLY plain text. No JSON, no markdown. Just what you would say out loud.
+"""
+        }]
+    }
+
+    resInJSON = makeRequest(url, headers, data)
+    transitionText = resInJSON["choices"][0]["message"]["content"].strip()
+    print(f"\nInterviewer: {transitionText}\n")
+
+    # Step 2: Candidate asks their question(s)
+    candidateQuestions = input("Enter your answer: ")
+    saveData(transitionText, candidateQuestions)
+
+    # Step 3: AI answers the candidate's questions and closes the interview
+    data = {
+        "model": "llama-3.3-70b-versatile",
+        "messages": [{
+            "role": "user",
+            "content": f"""You are {name}, a {title} with {experience} years of experience. Your personality: {personality}.
+
+The candidate just asked you their closing questions:
+"{candidateQuestions}"
+
+Your job:
+1. Answer their question(s) naturally and helpfully — 2-3 sentences per question max. If they said they have no questions (e.g. "no", "I'm good", "nothing"), acknowledge that warmly and skip answering.
+2. Close the interview warmly and professionally.
+3. End with exactly this sentence: "You will receive an email with your results in about 5 minutes. Best of luck!"
+
+Sound like a real human wrapping up — not a robot. Be warm, direct, and genuine.
+Return ONLY plain text. No JSON, no markdown. Just what you would say out loud.
+"""
+        }]
+    }
+
+    resInJSON = makeRequest(url, headers, data)
+    closingText = resInJSON["choices"][0]["message"]["content"].strip()
+    print(f"\nInterviewer: {closingText}\n")
+
 
 def start():
     freshState = {
@@ -248,8 +318,7 @@ def start():
         print(questionCount)
         askQuestion(questionCount)
 
-    askGoodByeQuestion()
-    goodbye()
+    closeInterview()
 
 
 start()
