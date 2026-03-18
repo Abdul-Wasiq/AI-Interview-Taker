@@ -26,5 +26,5 @@ AI Interview Taker is an application for the user who wants to prepare for inter
 - [x] Phase 1 - Prompt cleaner done
 - [x] Phase 2 - Question generator done
 - [x] Brain - Ask Question Done
-- [ ] Voice - Not started
+- [ ] Voice - In Progress
 - [ ] Result - Not started
