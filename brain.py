@@ -3,6 +3,8 @@ import requests
 import json
 from dotenv import load_dotenv
 import azure.cognitiveservices.speech as speechsdk
+import threading
+import time
 
 load_dotenv()
 
@@ -18,23 +20,50 @@ def speak(text):
 def listen_and_transcribe():
     key = os.getenv("AZURE_SPEECH_KEY")
     region = os.getenv("AZURE_SPEECH_REGION")
+    
     speechConfig = speechsdk.SpeechConfig(subscription=key, region=region)
-    speechConfig.set_property(
-        speechsdk.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "8000"
-    )
-    speechConfig.set_property(
-        speechsdk.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, "10000"
-    )
     recognizer = speechsdk.SpeechRecognizer(speech_config=speechConfig)
+    
+    fullText = []
+    lastSpoken = [time.time()]
+    heardAnything = [False]
+    done = threading.Event()
+
+    def on_recognized(evt):
+        if evt.result.text:
+            fullText.append(evt.result.text)
+            lastSpoken[0] = time.time()
+            heardAnything[0] = True
+            print(f"[PARTIAL]: {evt.result.text}")
+
+    def on_recognizing(evt):
+        if evt.result.text:
+            lastSpoken[0] = time.time()
+            heardAnything[0] = True
+
+    recognizer.recognized.connect(on_recognized)
+    recognizer.recognizing.connect(on_recognizing)
+
     print("[LISTENING...]")
-    result = recognizer.recognize_once_async().get()
-    if result.reason == speechsdk.ResultReason.RecognizedSpeech:
-        print(f"[YOU SAID]: {result.text}")
-        return result.text
+    recognizer.start_continuous_recognition_async().get()
+
+    while True:
+        time.sleep(0.2)
+        silenceFor = time.time() - lastSpoken[0]
+        if heardAnything[0] and silenceFor >= 8:
+            break
+        if time.time() - lastSpoken[0] > 30 and not heardAnything[0]:
+            break
+
+    recognizer.stop_continuous_recognition_async().get()
+
+    result = " ".join(fullText).strip()
+    if result:
+        print(f"[YOU SAID]: {result}")
+        return result
     else:
         print("[SILENCE DETECTED]")
         return "[SYSTEM: 10 seconds of silence]"
-
 def loadInterview():
     try:
         with open('interview_structure.json', 'r') as file:
