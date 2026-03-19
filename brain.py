@@ -2,9 +2,38 @@ import os
 import requests
 import json
 from dotenv import load_dotenv
+import azure.cognitiveservices.speech as speechsdk
 
 load_dotenv()
 
+
+def speak(text):
+    key = os.getenv("AZURE_SPEECH_KEY")
+    region = os.getenv("AZURE_SPEECH_REGION")
+    speechConfig = speechsdk.SpeechConfig(subscription=key, region=region)
+    speechConfig.speech_synthesis_voice_name = "en-IN-ArjunNeural"
+    synthesizer = speechsdk.SpeechSynthesizer(speech_config=speechConfig)
+    synthesizer.speak_text_async(text).get()
+
+def listen_and_transcribe():
+    key = os.getenv("AZURE_SPEECH_KEY")
+    region = os.getenv("AZURE_SPEECH_REGION")
+    speechConfig = speechsdk.SpeechConfig(subscription=key, region=region)
+    speechConfig.set_property(
+        speechsdk.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "8000"
+    )
+    speechConfig.set_property(
+        speechsdk.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, "10000"
+    )
+    recognizer = speechsdk.SpeechRecognizer(speech_config=speechConfig)
+    print("[LISTENING...]")
+    result = recognizer.recognize_once_async().get()
+    if result.reason == speechsdk.ResultReason.RecognizedSpeech:
+        print(f"[YOU SAID]: {result.text}")
+        return result.text
+    else:
+        print("[SILENCE DETECTED]")
+        return "[SYSTEM: 10 seconds of silence]"
 
 def loadInterview():
     try:
@@ -14,7 +43,7 @@ def loadInterview():
         return "Error: File Not Found"
 
 def userAnswer():
-    return input("Enter your answer: ")
+    return listen_and_transcribe()
 
 def saveData(question, answer):
     with open('answers.json', 'r') as file:
@@ -38,6 +67,7 @@ def saveJudgment(question, answer, judgment):
 def greeting():
     structure = loadInterview()
     greetingText = structure["interviewer"]["opening_greeting"]
+    speak(greetingText)
     print(f"\nInterviewer: {greetingText}\n")
     answer = userAnswer()
     saveData(greetingText, answer)
@@ -47,7 +77,6 @@ apis = [os.getenv("api1"), os.getenv("api2"), os.getenv("api3"), os.getenv("api4
 def getCurrAPI():
     with open('api_data.json', 'r') as file:
         data = json.load(file)
-
     return data['index']
 
 def rotateAPI(currIndx):
@@ -61,14 +90,10 @@ def makeRequest(url, headers, data):
     for attempt in range(len(apis)):
         currIndx = getCurrAPI()
         brainAPI = apis[currIndx]
-        
         headers["Authorization"] = f"Bearer {brainAPI}"
-        
         response = requests.post(url, headers=headers, json=data)
         resInJSON = response.json()
-        
         if "choices" in resInJSON:
-            # Success! Also check if tokens are getting low for NEXT call
             remainingTokens = int(response.headers.get("x-ratelimit-remaining-tokens", 99999))
             if remainingTokens < 5000:
                 print(f"[DEV_BACKEND]: API{currIndx+1} low on tokens, rotating for next call...")
@@ -77,29 +102,24 @@ def makeRequest(url, headers, data):
         else:
             print(f"[DEV_BACKEND]: API{currIndx+1} failed ({resInJSON.get('error', {}).get('message', 'unknown error')}), rotating...")
             rotateAPI(currIndx)
-    
     raise Exception("All APIs exhausted. Try again later.")
 
 def askQuestion(questionCount):
-    
     url = "https://api.groq.com/openai/v1/chat/completions"
-
     headers = {
         "Content-Type": "application/json",
         "Authorization": ""
     }
 
     structure = loadInterview()
-    with open ('user_background.json', 'r') as file:
+    with open('user_background.json', 'r') as file:
         user_input = json.load(file)
     prompt = user_input["userPrompt"]
     level = user_input["level"]
 
-    
     with open('answers.json', 'r') as file:
         answersData = json.load(file)
-    
-    # last 6 questions and answers
+
     conversationHistory = answersData["conversationHistory"][-16:]
     lastQuestion = conversationHistory[-2]["content"]
     lastAnswer = conversationHistory[-1]["content"]
@@ -196,7 +216,7 @@ def askQuestion(questionCount):
             "acknowledgment": "one short human reaction — or empty string if you're going cold into the question",
             "nextQuestion": "your next question, phrased how a real person would say it out loud"
         }}
-                QUESTION TRACKING:
+        QUESTION TRACKING:
         - You have asked {questionCount} out of 9 questions
         - Questions remaining: {9 - questionCount}
         - DISTRIBUTE questions across phases:
@@ -208,7 +228,7 @@ def askQuestion(questionCount):
         }]
     }
 
-    resInJSON = makeRequest(url, headers, data) # same as requests.post()
+    resInJSON = makeRequest(url, headers, data)
     rawContent = resInJSON["choices"][0]["message"]["content"]
     rawContent = rawContent.replace("```json", "").replace("```", "").strip()
 
@@ -218,11 +238,13 @@ def askQuestion(questionCount):
     nextQuestion = parsedResponse["nextQuestion"]
 
     saveJudgment(lastQuestion, lastAnswer, judgment)
-    print(f"\nInterviewer: {acknowledgment} {nextQuestion}\n")
+    botText = f"{acknowledgment} {nextQuestion}".strip()
+    speak(botText)
+    print(f"\nInterviewer: {botText}\n")
     answer = userAnswer()
     saveData(nextQuestion, answer)
 
-    if (parsedResponse.get("end") == True):
+    if parsedResponse.get("end") == True:
         print(f"\nInterviewer: {parsedResponse['acknowledgment']} \n")
         return True
 
@@ -230,7 +252,7 @@ def closeInterview():
     url = "https://api.groq.com/openai/v1/chat/completions"
 
     structure = loadInterview()
-    with open('answers.json', 'r') as file: 
+    with open('answers.json', 'r') as file:
         answersData = json.load(file)
 
     conversationHistory = answersData["conversationHistory"][-10:]
@@ -247,7 +269,6 @@ def closeInterview():
         "Authorization": ""
     }
 
-    # Step 1: React to the last answer, wrap up warmly, and ask if they have any questions
     data = {
         "model": "llama-3.3-70b-versatile",
         "messages": [{
@@ -272,13 +293,12 @@ Return ONLY plain text. No JSON, no markdown. Just what you would say out loud.
 
     resInJSON = makeRequest(url, headers, data)
     transitionText = resInJSON["choices"][0]["message"]["content"].strip()
+    speak(transitionText)
     print(f"\nInterviewer: {transitionText}\n")
 
-    # Step 2: Candidate asks their question(s)
-    candidateQuestions = input("Enter your answer: ")
+    candidateQuestions = userAnswer()
     saveData(transitionText, candidateQuestions)
 
-    # Step 3: AI answers the candidate's questions and closes the interview
     data = {
         "model": "llama-3.3-70b-versatile",
         "messages": [{
@@ -301,6 +321,7 @@ Return ONLY plain text. No JSON, no markdown. Just what you would say out loud.
 
     resInJSON = makeRequest(url, headers, data)
     closingText = resInJSON["choices"][0]["message"]["content"].strip()
+    speak(closingText)
     print(f"\nInterviewer: {closingText}\n")
 
 
