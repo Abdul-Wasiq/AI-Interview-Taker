@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Interview Portal</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #121212; color: #ffffff; text-align: center; padding-top: 50px; }
+        .container { max-width: 500px; margin: 0 auto; background: #1e1e1e; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+        input[type="text"] {
+            width: 100%; padding: 12px; margin-top: 12px; margin-bottom: 20px;
+            border-radius: 6px; border: 1px solid #333; background: #2a2a2a; color: #fff;
+            font-size: 15px; box-sizing: border-box;
+        }
+        button { background: #3b82f6; color: white; border: none; padding: 12px 30px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; transition: 0.2s; }
+        button:hover { background: #2563eb; }
+        button:disabled { background: #4b5563; cursor: not-allowed; }
+        #status { margin-top: 20px; color: #a1a1aa; font-style: italic; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🎙️ AI Technical Interview Room</h2>
+        <p>Ensure your microphone is connected and your laptop volume is turned up.</p>
+
+        <input type="text" id="topic-input" placeholder="e.g. Python backend development, JavaScript, React..." />
+
+        <br>
+        <button id="start-btn" onclick="startVoiceStream()">Start Interview</button>
+        <p id="status">Ready to connect...</p>
+    </div>
+
+    <script>
+    let ws;
+    let recordCtx;   // 16kHz - for mic input to Gemini
+    let playCtx;     // 24kHz - for Gemini's audio output
+    let nextStartTime = 0;
+    let micStream;   // raw getUserMedia stream, needed to stop mic hardware
+    let micProcessor;
+
+    function shutdownEverything(message) {
+        // Stop the mic hardware itself (this turns off the browser's "recording" indicator)
+        if (micStream) {
+            micStream.getTracks().forEach(track => track.stop());
+        }
+        if (micProcessor) {
+            micProcessor.disconnect();
+        }
+        if (recordCtx && recordCtx.state !== "closed") {
+            recordCtx.close();
+        }
+        if (playCtx && playCtx.state !== "closed") {
+            playCtx.close();
+        }
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.close();
+        }
+        document.getElementById("status").innerText = message || "Interview ended.";
+        document.getElementById("start-btn").disabled = false;
+        document.getElementById("start-btn").innerText = "Start New Interview";
+        document.getElementById("topic-input").disabled = false;
+    }
+
+    async function startVoiceStream() {
+        const topic = document.getElementById("topic-input").value.trim();
+        if (!topic) {
+            document.getElementById("status").innerText = "Please enter a topic to be interviewed in.";
+            return;
+        }
+
+        document.getElementById("status").innerText = "Connecting to Python Server...";
+
+        ws = new WebSocket("ws://localhost:8000/media-stream");
+        ws.binaryType = "arraybuffer";
+
+        recordCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+        playCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+        nextStartTime = playCtx.currentTime;
+
+        ws.onopen = () => {
+            // First message MUST be the topic as plain text — the backend
+            // is waiting on receive_text() before it does anything else.
+            ws.send(topic);
+        };
+
+        ws.onclose = () => {
+            // Covers cases where the connection drops for reasons other than
+            // the explicit end signal below (e.g. network issue, server crash).
+            if (document.getElementById("start-btn").disabled) {
+                shutdownEverything("Connection closed.");
+            }
+        };
+
+        // A. PLAYBACK: queue each chunk back-to-back instead of overlapping
+        ws.onmessage = async (event) => {
+            if (event.data instanceof ArrayBuffer) {
+                document.getElementById("status").innerText = "AI Recruiter is speaking...";
+
+                const int16Array = new Int16Array(event.data);
+                const audioBuffer = playCtx.createBuffer(1, int16Array.length, 24000);
+                const channelData = audioBuffer.getChannelData(0);
+
+                for (let i = 0; i < int16Array.length; i++) {
+                    channelData[i] = int16Array[i] / 32768;
+                }
+
+                const source = playCtx.createBufferSource();
+                source.buffer = audioBuffer;
+                source.connect(playCtx.destination);
+
+                const startAt = Math.max(nextStartTime, playCtx.currentTime);
+                source.start(startAt);
+                nextStartTime = startAt + audioBuffer.duration;
+            } else if (typeof event.data === "string") {
+                // Text control messages from the backend
+                if (event.data === "__INTERVIEW_ENDED__") {
+                    // Give the last chunk of AI audio a moment to actually finish
+                    // playing before we tear down the audio contexts.
+                    const remainingMs = Math.max(0, (nextStartTime - playCtx.currentTime) * 1000) + 300;
+                    setTimeout(() => shutdownEverything("Interview ended. Thanks for chatting!"), remainingMs);
+                }
+            }
+        };
+
+        // B. RECORDING: mic -> 16kHz PCM -> Python
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            micStream = stream;
+            document.getElementById("status").innerText = "Connected! Say hello to the interviewer.";
+            document.getElementById("start-btn").disabled = true;
+            document.getElementById("topic-input").disabled = true;
+
+            const source = recordCtx.createMediaStreamSource(stream);
+            const processor = recordCtx.createScriptProcessor(2048, 1, 1);
+            micProcessor = processor;
+
+            source.connect(processor);
+            processor.connect(recordCtx.destination);
+
+            processor.onaudioprocess = (e) => {
+                const inputData = e.inputBuffer.getChannelData(0);
+                const int16Buffer = new Int16Array(inputData.length);
+
+                for (let i = 0; i < inputData.length; i++) {
+                    int16Buffer[i] = Math.min(1, Math.max(-1, inputData[i])) * 0x7FFF;
+                }
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.send(int16Buffer.buffer);
+                }
+            };
+        } catch (err) {
+            document.getElementById("status").innerText = "Error: Access to microphone denied.";
+            console.error(err);
+        }
+    }
+    </script>
+</body>
+</html>
