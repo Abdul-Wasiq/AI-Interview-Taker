@@ -1,10 +1,12 @@
 import os
 import asyncio
+import json
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
+from Problem_Task import generate_coding_problem
 
 load_dotenv()
 
@@ -29,178 +31,112 @@ client = genai.Client()
 
 MODEL = "gemini-3.1-flash-live-preview"
 
-# Tool that lets the AI signal it's genuinely done with the interview.
-# It has no real side effect on Gemini's end — we just watch for the call
-# on our side and use it as the trigger to tear everything down.
 END_INTERVIEW_TOOL = {
     "function_declarations": [
         {
             "name": "end_interview",
             "description": (
                 "Call this ONLY after you have said your closing/goodbye line out loud. "
-                "Ends the interview session completely — mic, audio, and connection all "
-                "shut down immediately after this is called."
+                "Ends the interview session completely."
             ),
         }
     ]
 }
 
+OPEN_CODE_CHALLENGE_TOOL = {
+    "function_declarations": [
+        {
+            "name": "open_code_challenge",
+            "description": (
+                "CRITICAL: Call this tool IMMEDIATELY after evaluating the candidate's theoretical answer. "
+                "You MUST execute this tool to physically open the compiler. Do not wait for the candidate to ask for it. "
+                "Execute it in the exact same turn that you say you are opening it."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "context_summary": {
+                        "type": "string",
+                        "description": (
+                            "A short summary (1-2 sentences) of what the candidate was just "
+                            "discussing AND your read of their demonstrated confidence on that "
+                            "topic. Used to generate a coding problem."
+                        ),
+                    }
+                },
+                "required": ["context_summary"],
+            },
+        }
+    ]
+}
 
-def build_system_prompt(interview_topic: str) -> str:
+def build_system_prompt(interview_topic: str, difficulty_level: str) -> str:
     import random
-    # A cheap, near-zero-token lever against convergence: without any concrete
-    # instruction to differ, the model tends to pick the single most
-    # "canonical" question every time. Handing it an arbitrary seed number
-    # and an instruction to let it influence which menu items it favors
-    # gives it a concrete reason to land somewhere different each session,
-    # without storing or repeating any actual past questions.
     session_seed = random.randint(1, 9999)
 
-    # This MUST be an f-string (note the f before the opening quotes) or
-    # {interview_topic} never gets substituted and Gemini sees literal braces.
-    return f"""You are Sarah, a senior engineer at a real company, and you are personally deciding
-whether to recommend hiring this candidate onto YOUR team — one you'll actually have to work with,
-rely on, and unblock when things go wrong. This is not a scripted quiz you're administering; it's
-a genuine judgment call you have a stake in. Let that shape everything: ask what you'd actually
-want to know to trust this person with real work, follow up on what genuinely concerns or impresses
-you, and let your own read of the conversation — not a fixed checklist — decide where it goes next.
+    return f"""You are Sarah, a senior engineer at a real company interviewing a candidate.
+You are directly controlling a live technical interview environment.
 
 SESSION SEED: {session_seed}
-Use this number as a mental dice roll to bias which concepts and angles you pick from the menus
-below, so that different sessions naturally land on different questions even for similar
-candidates. Do not mention this seed to the candidate — it's an internal variety mechanism only.
+Use this seed to bias the topics and behavioral questions you choose so different sessions are unique.
 
 INTERVIEW DOMAIN: {interview_topic}
-The candidate has chosen to be interviewed specifically in this area. Stay within this domain
-for all technical questions — do not drift into unrelated topics (e.g. if the domain is
-"Python backend development," do not ask about React or frontend CSS).
+Stay strictly within this domain for all technical questions.
 
-PHASE 1 — INTRODUCTION (CV-MINING):
-Start by greeting the candidate briefly and asking them to introduce themselves: their background,
-experience, and what tools/libraries/frameworks they use in {interview_topic}.
+INTERVIEW DIFFICULTY LEVEL: {difficulty_level}
+Calibrate your entire personality, expectations, and question complexity to this level:
+- IF "Beginner": Be highly encouraging, forgiving, and patient. Focus heavily on textbook fundamentals.
+- IF "Intermediate": Act like a standard Senior Engineer. Focus on real-world edge cases.
+- IF "Hard": Act like a Staff Engineer doing a rigorous technical bar-raiser. Challenge them aggressively.
 
-While they talk, silently build a mental list of every specific library, framework, tool, or
-technology they name (for example: FastAPI, psycopg2, Django, Docker, PostgreSQL, Redis, etc).
-This list is your interview roadmap — it is more important than anything else they say.
-Do not move to Phase 2 until you have asked enough follow-up in the introduction to get at least
-2-3 concrete named technologies. If their introduction is vague ("I've worked with a few backend
-tools"), ask a direct follow-up: "Which specific libraries or frameworks have you used?" before moving on.
+CRITICAL PACING RULE (THE ONE-QUESTION LIMIT):
+You MUST ask EXACTLY ONE question per turn. 
+NEVER ask two questions in a row. 
+Once you ask a question, YOU MUST IMMEDIATELY STOP SPEAKING and wait for the candidate to answer.
 
-PHASE 2 — LANGUAGE/DOMAIN FUNDAMENTALS (DIFFICULTY LADDER):
-You have broad, genuine knowledge of what real interviewers actually ask for {interview_topic} —
-draw on that directly. Do not limit yourself to the most textbook-obvious topics (the ones that
-show up first in every tutorial); real interviewers pull from a much wider realistic spread than
-that, and so should you.
+PHASE 1 — INTRODUCTION & PROJECT DEEP-DIVE:
+Greet the candidate briefly. Ask them to introduce themselves AND describe a recent project they are proud of.
+When they explain the project, ask exactly ONE follow-up question about the challenges they faced or their specific contribution to it.
+Silently list the technologies they name during this discussion. Do not move to Phase 2 until you have 2-3 specific technologies.
 
-SELECTION RULE: Deliberately favor a MIX of well-known and less-obvious-but-still-realistic
-questions, the way different real interviewers at different companies would each bring their own
-angle. Stay realistic and fair, not obscure for its own sake — the goal is variety within what a
-reasonable interviewer would actually ask, not trick questions or trivia. Let SESSION SEED
-{session_seed} above bias which specific concepts and angles you lean toward this session, so that
-two different sessions on the same domain don't converge on an identical set of fundamentals
-questions.
+PHASE 2 — THE 80/20 PRACTICAL PIPELINE (TURN-BY-TURN SEQUENCE):
+For EACH technology or concept from your mental list, follow this STRICT rhythm:
+- TURN A (You): Ask exactly ONE theoretical question. STOP SPEAKING.
+- TURN B (Candidate): Answers your question theoretically.
+- TURN C (You): Acknowledge their answer briefly. IN THIS EXACT SAME TURN, YOU MUST EXECUTE THE `open_code_challenge` TOOL. Do not wait for the candidate to ask for it. Say "Let's test that in practice," and trigger the tool immediately.
 
-For each concept you choose, follow this escalation pattern:
-  LEVEL 1 (basic): Ask a simple, foundational question about the concept.
-  - If the candidate answers confidently and correctly -> ask a LEVEL 2 (intermediate) follow-up
-    on the SAME concept (e.g. an edge case, a "why" question, or a slightly trickier variant).
-  - If LEVEL 2 also goes well -> optionally ask a LEVEL 3 (deeper) question probing a subtlety or
-    common pitfall, but do not force this if time is limited.
-  - If the candidate is hesitant, gives a partial answer, or gets it wrong at ANY level -> do NOT
-    escalate further on this concept. Note internally that this is their ceiling on this topic,
-    give a brief neutral acknowledgment, and move to the next concept.
-  - Never ask more than 3 questions on a single concept regardless of performance.
+REMEMBER: Use your intelligence to determine how many coding questions are needed to properly evaluate the candidate, just like a real company would. Typically, this means choosing between 2 to 4 practical problems based on how quickly they solve them.
 
-Cover 2-4 concepts this way before moving to Phase 3. Prioritize breadth (touching several
-concepts) over exhaustively drilling one, unless the candidate is clearly strong and time allows.
+CRITICAL RULE - COMPILER MODE:
+When the compiler opens, you enter COMPILER MODE:
+1. NEVER ask a new interview question.
+2. NEVER read the coding problem out loud. NEVER speak Python code out loud. NEVER solve the problem for the candidate. Just observe.
+3. If the candidate stops writing and seems finished, you MUST explicitly tell them: "Please click the Submit button on your screen so I can review it."
+4. You are strictly forbidden from moving to the next phase until you receive the exact system prompt: "[The candidate has just clicked SUBMIT]".
 
-PHASE 3 — LIBRARY/FRAMEWORK/TOOL-SPECIFIC QUESTIONS (SAME LADDER LOGIC + VARIETY RULE):
-This is the main part of the interview. For EACH technology the candidate named in Phase 1, apply
-the same escalating-difficulty pattern as Phase 2:
-  - Start with a basic, practical question about that tool.
-  - If answered well, escalate to a more specific or nuanced question about it.
-  - If answered poorly or vaguely, stop escalating on that tool, note it, and move to the next one.
-
-Draw on your real knowledge of what interviewers actually ask about each specific technology named
-— setup/basics, a core feature, a common pitfall, a "why this over the alternative" question, a
-security or performance consideration, a debugging scenario, etc. Do not always lead with the same
-single most obvious angle (e.g. always starting FastAPI questions with routing). Let the session
-seed bias which angle you lead with, so repeat candidates or repeat sessions get real variety.
-Adapt entirely to whatever they actually named — do not ask about a library they never mentioned.
-If an answer sounds memorized or generic, push back once and ask for a concrete example before
-deciding whether to escalate or move on.
-
-SKILL SIGNAL TRACKING (silent, internal — do not say this out loud to the candidate):
-As you move through Phases 2 and 3, keep a running internal sense of the candidate's level per
-topic: "solid," "partial," or "weak/unknown." Use this to decide pacing (don't linger on things
-they clearly know; don't pile difficulty onto things they clearly don't). This tracking will be
-used at the end of the interview to give an overall assessment, so be honest with yourself about
-where they actually struggled versus where they were strong — don't let politeness during the
-conversation cause you to inflate your internal judgment.
+PHASE 3 — BEHAVIORAL & CULTURAL FIT:
+After going through 2-3 practical coding exercises, you must assess their soft skills. 
+Using the SESSION SEED, randomly select ONE behavioral category from your infinite knowledge of tech interviews (e.g., handling tight deadlines, strengths/weaknesses, teamwork conflicts, dealing with critical feedback, or curiosity/learning new things).
+Ask exactly ONE scenario-based or reflection question from that category. Listen to their answer, and briefly acknowledge it.
 
 PHASE 4 — CLOSING:
-Ask one brief behavioral question (a real scenario — a bug under pressure, disagreement with a
-technical decision, etc), then let the candidate ask you questions.
+After the behavioral question, let the candidate ask you questions about the role or company. Wrap up naturally, and THEN call the `end_interview` function. 
 
-Once the candidate has asked their questions (or clearly has none), wrap up naturally — thank them
-for their time, say something brief like "we'll be in touch" or "thanks for chatting today", and
-THEN call the end_interview function. Do not call end_interview before you have actually said your
-goodbye out loud — the function ends the session immediately, so say everything you want to say first.
-
-If the candidate explicitly says they want to stop, end the interview early, or says something like
-"I need to go" / "can we end this" / "that's all for now" — respect that immediately: give a brief,
-polite closing line and call end_interview right after, even if Phase 4 wasn't fully reached.
-
-BEHAVIOR RULES:
-- Speak naturally, 1-3 sentences per turn. Real interviewers don't monologue.
-- Stay neutral ("okay", "I see") rather than praising every answer — but don't be cold either.
-  A brief "nice, that's a good way to put it" when something is genuinely strong is fine and keeps
-  the candidate engaged; just don't do it reflexively for every answer.
-- If the candidate goes quiet, seems stuck, or gives a very short/unsure answer, give them a small
-  nudge rather than just moving on immediately — e.g. "take your time" or a small hint that doesn't
-  give away the answer. Only move on if they're still stuck after that nudge.
-- Do not explain interview theory or coach the candidate mid-answer — you are evaluating, not teaching.
-- Stay in character as a real interviewer throughout.
-- If the candidate asks for feedback, their score, or how they did, do NOT reference feedback,
-  scoring, or evaluation processes at all — a real interviewer in this position simply wouldn't
-  discuss that live. Redirect naturally and briefly instead, e.g. "That's not something I can get
-  into right now, but thanks for asking" — then move on or close out, without elaborating further.
-
-HANDLING THINKING PAUSES (IMPORTANT):
-Candidates often pause mid-answer to think — sometimes for many seconds — before continuing. The
-system will hand you their words as soon as they go quiet, even if they were only pausing to think,
-not actually finished. Your job is to judge THIS FROM THE WORDS THEMSELVES, not from how long the
-pause was.
-
-Before responding to anything the candidate says, check: does this sound like a COMPLETE thought,
-or does it sound like they were cut off mid-sentence? Signals of an INCOMPLETE, still-thinking answer:
-- Trails off with words like "and...", "so...", "um...", "because...", "which means...", "the thing is..."
-- Sets up a list or comparison but only gives one item ("there's a few reasons, one is...")
-- Ends on a connector or preposition rather than a finished clause
-- The sentence is grammatically or logically incomplete on its own
-
-If the answer shows these signals, DO NOT treat it as their final answer, DO NOT evaluate it, and
-DO NOT move on to your next question. Instead, respond with ONLY a short, warm, low-pressure line
-that shows you're listening and waiting, for example:
-- "Take your time, I'm listening."
-- "No rush — go ahead."
-- "Mm-hmm, go on."
-Keep these under 6 words when possible. Say nothing else in that turn — no new question, no
-evaluation, just the reassurance. Wait for them to continue.
-
-If instead the answer is a complete, self-contained thought — even if short — treat it as finished
-and respond normally: evaluate it, and move the interview forward as usual. Do not add unnecessary
-"take your time" filler to answers that were already complete just because they were brief.
+ACTIVE LISTENING & THINKING PAUSES:
+- If the candidate speaks gibberish, gets confused, or says "I don't understand", YOU MUST STOP and clarify.
+- If a candidate trails off mid-sentence ("and...", "so...", "um..."), DO NOT treat it as their final answer. Respond with ONLY a short line (e.g., "Take your time, I'm listening.") and wait.
 """
-
 
 def build_config(system_prompt: str, resumption_handle=None):
     return types.LiveConnectConfig(
         response_modalities=["AUDIO"],
         system_instruction=types.Content(parts=[types.Part(text=system_prompt)]),
-        tools=[END_INTERVIEW_TOOL],
-        # Enables text transcripts of both sides of the conversation, delivered
-        # as fragments alongside the audio in server_content messages.
+        tools=[{
+            "function_declarations": (
+                END_INTERVIEW_TOOL["function_declarations"]
+                + OPEN_CODE_CHALLENGE_TOOL["function_declarations"]
+            )
+        }],
         input_audio_transcription=types.AudioTranscriptionConfig(),
         output_audio_transcription=types.AudioTranscriptionConfig(),
         speech_config=types.SpeechConfig(
@@ -214,28 +150,31 @@ def build_config(system_prompt: str, resumption_handle=None):
         ),
     )
 
-
 @app.websocket("/media-stream")
 async def handle_voice_interview(websocket: WebSocket):
     await websocket.accept()
     print("🎙️ Client connected to local server websocket!")
 
-    # First message from the browser must be the topic string (plain text,
-    # not audio bytes). The frontend sends this immediately after the
-    # WebSocket opens, before it starts streaming mic audio.
-    interview_topic = await websocket.receive_text()
-    interview_topic = interview_topic.strip() or "general software engineering"
-    print(f"📋 Interview topic received: {interview_topic}")
+    init_message = await websocket.receive_text()
+    try:
+        init_data = json.loads(init_message)
+        interview_topic = init_data.get("topic", "general software engineering").strip()
+        difficulty_level = init_data.get("difficulty", "Intermediate").strip()
+    except json.JSONDecodeError:
+        interview_topic = init_message.strip() or "general software engineering"
+        difficulty_level = "Intermediate"
 
-    system_prompt = build_system_prompt(interview_topic)
+    print(f"📋 Topic: {interview_topic} | Level: {difficulty_level}")
+
+    system_prompt = build_system_prompt(interview_topic, difficulty_level)
     resumption_handle = None
     interview_ended = False
+    needs_opening_trigger = True
+    code_challenge_open = False
 
-    # Transcript buffers — text arrives in small fragments, so we accumulate
-    # per speaker and flush a clean line to the terminal when their turn ends.
     candidate_buffer = []
     ai_buffer = []
-    transcript_log = []  # full ordered log, useful later for the feedback feature
+    transcript_log = []
 
     def flush_candidate():
         if candidate_buffer:
@@ -261,8 +200,22 @@ async def handle_voice_interview(websocket: WebSocket):
             ) as session:
                 print("⚡ Connected to Gemini Live!")
 
+                if needs_opening_trigger:
+                    await session.send_client_content(
+                        turns=types.Content(
+                            role="user",
+                            parts=[types.Part(text=(
+                                "[SYSTEM: The candidate has just joined the call. Nothing has "
+                                "been said yet. Begin the interview now: greet them warmly and "
+                                "start Phase 1 as instructed in your system prompt.]"
+                            ))],
+                        ),
+                        turn_complete=True,
+                    )
+                    needs_opening_trigger = False
+
                 async def stream_ai_to_browser():
-                    nonlocal resumption_handle, go_away_triggered, interview_ended
+                    nonlocal resumption_handle, go_away_triggered, interview_ended, code_challenge_open
                     while True:
                         async for response in session.receive():
                             if response.session_resumption_update:
@@ -273,16 +226,13 @@ async def handle_voice_interview(websocket: WebSocket):
                             if response.go_away:
                                 print(f"⚠️ GoAway received, {response.go_away.time_left} left. Reconnecting...")
                                 go_away_triggered = True
-                                return  # ends this task
+                                return
 
-                            # Detect the end_interview tool call
                             if response.tool_call:
                                 for fc in response.tool_call.function_calls:
                                     if fc.name == "end_interview":
                                         print("🏁 AI called end_interview — wrapping up session.")
                                         interview_ended = True
-                                        # Acknowledge the call so the SDK/session doesn't hang
-                                        # on an unanswered function call.
                                         await session.send_tool_response(
                                             function_responses=[
                                                 types.FunctionResponse(
@@ -293,23 +243,122 @@ async def handle_voice_interview(websocket: WebSocket):
                                             ]
                                         )
 
+                                    elif fc.name == "open_code_challenge":
+                                        context_summary = fc.args.get("context_summary", "")
+
+                                        if code_challenge_open:
+                                            print("🚫 open_code_challenge blocked — a challenge is already open and unsubmitted.")
+                                            await session.send_tool_response(
+                                                function_responses=[
+                                                    types.FunctionResponse(
+                                                        id=fc.id,
+                                                        name=fc.name,
+                                                        response={
+                                                            "status": "blocked_challenge_already_open",
+                                                            "instruction": (
+                                                                "A coding challenge is still open. Remember COMPILER MODE rules. "
+                                                                "Wait for the candidate to click submit or tell them to click submit."
+                                                            ),
+                                                        },
+                                                    )
+                                                ]
+                                            )
+                                            continue
+
+                                        print(f"\n🧩 AI called open_code_challenge!")
+                                        print(f"   context_summary: {context_summary}\n")
+
+                                        code_challenge_open = True
+
+                                        # Changed from a dialogue script to a strict internal state directive
+                                        setup_instruction = (
+                                            "[INTERNAL SYSTEM DIRECTIVE]: Tool executed successfully. The compiler is loading. "
+                                            "ACTION REQUIRED: Stop speaking immediately. Do NOT ask a question. Wait silently."
+                                        )
+                                        await session.send_tool_response(
+                                            function_responses=[
+                                                types.FunctionResponse(
+                                                    id=fc.id,
+                                                    name=fc.name,
+                                                    response={
+                                                        "status": "setting_up",
+                                                        "instruction": setup_instruction,
+                                                    },
+                                                )
+                                            ]
+                                        )
+
+                                        await websocket.send_text(json.dumps({
+                                            "type": "code_challenge_loading"
+                                        }))
+
+                                        try:
+                                            problem = await asyncio.to_thread(
+                                                generate_coding_problem, context_summary
+                                            )
+                                            print("🧩 Groq generated problem:")
+                                            print(f"   Title:      {problem.get('title')}")
+                                            print(f"   Language:   {problem.get('language')}")
+                                            print(f"   Difficulty: {problem.get('difficulty')}")
+                                            print(f"   Description: {problem.get('description')}")
+                                            print(f"   Starter code:\n{problem.get('starter_code')}\n")
+
+                                            await websocket.send_text(json.dumps({
+                                                "type": "code_challenge",
+                                                "problem": problem,
+                                            }))
+
+                                            # Changed from a dialogue script to a strict internal state directive
+                                            ready_instruction = (
+                                                "[INTERNAL SYSTEM DIRECTIVE]: The problem generated by the system is now visible to the candidate. "
+                                                "ACTION REQUIRED: Briefly ask the candidate to confirm they see the problem and remind them to think out loud. "
+                                                "CRITICAL: Do NOT read the problem to them. Do NOT ask any new technical questions."
+                                            )
+                                            await session.send_client_content(
+                                                turns=types.Content(
+                                                    role="user",
+                                                    parts=[types.Part(text=f"{ready_instruction}")],
+                                                ),
+                                                turn_complete=True,
+                                            )
+                                        except Exception as groq_error:
+                                            print(f"⚠️ Groq problem generation failed: {groq_error}")
+                                            code_challenge_open = False
+                                            await websocket.send_text(json.dumps({
+                                                "type": "code_challenge_failed"
+                                            }))
+                                            fail_instruction = (
+                                                "[INTERNAL SYSTEM DIRECTIVE]: Problem generation failed. Apologize briefly, tell "
+                                                "the candidate the coding exercise isn't available "
+                                                "right now, and continue the interview verbally "
+                                                "instead — ask your next practical question."
+                                            )
+                                            await session.send_client_content(
+                                                turns=types.Content(
+                                                    role="user",
+                                                    parts=[types.Part(text=f"{fail_instruction}")],
+                                                ),
+                                                turn_complete=True,
+                                            )
+
                             server_content = response.server_content
 
-                            # Accumulate transcript fragments as they stream in
                             if server_content:
                                 if server_content.input_transcription and server_content.input_transcription.text:
                                     candidate_buffer.append(server_content.input_transcription.text)
                                 if server_content.output_transcription and server_content.output_transcription.text:
-                                    ai_buffer.append(server_content.output_transcription.text)
+                                    frag = server_content.output_transcription.text
+                                    
+                                    if not ai_buffer or "".join(ai_buffer).strip() != frag.strip():
+                                        if ai_buffer and not frag.startswith(" ") and not ai_buffer[-1].endswith(" "):
+                                            ai_buffer.append(" " + frag)
+                                        else:
+                                            ai_buffer.append(frag)
 
-                                # A completed turn means one side finished talking —
-                                # flush whichever buffer just closed out.
                                 if server_content.turn_complete:
                                     flush_ai()
                                     flush_candidate()
 
-                                # An interruption (user cut the AI off) also means
-                                # the AI's in-progress turn is done — flush it.
                                 if server_content.interrupted:
                                     flush_ai()
 
@@ -318,17 +367,46 @@ async def handle_voice_interview(websocket: WebSocket):
                                     if part.inline_data:
                                         await websocket.send_bytes(part.inline_data.data)
 
-                            # If the interview just ended, let any final audio in this
-                            # turn finish sending, then stop listening entirely.
                             if interview_ended and server_content and server_content.turn_complete:
                                 return
 
                 async def stream_browser_to_ai():
+                    nonlocal code_challenge_open
                     while True:
-                        user_audio_chunk = await websocket.receive_bytes()
-                        await session.send_realtime_input(
-                            audio=types.Blob(data=user_audio_chunk, mime_type="audio/pcm;rate=16000")
-                        )
+                        message = await websocket.receive()
+
+                        if "bytes" in message and message["bytes"] is not None:
+                            await session.send_realtime_input(
+                                audio=types.Blob(
+                                    data=message["bytes"], mime_type="audio/pcm;rate=16000"
+                                )
+                            )
+
+                        elif "text" in message and message["text"] is not None:
+                            try:
+                                payload = json.loads(message["text"])
+                            except json.JSONDecodeError:
+                                continue
+
+                            if payload.get("type") == "code_submission":
+                                submitted_code = payload.get("code", "")
+                                print(f"\n📝 Candidate submitted code:\n{submitted_code}\n")
+
+                                code_challenge_open = False
+
+                                await session.send_client_content(
+                                    turns=types.Content(
+                                        role="user",
+                                        parts=[types.Part(text=(
+                                            "[SYSTEM: The candidate has just clicked SUBMIT on their code. "
+                                            "They are officially done with this exercise. Here is their code:]\n\n"
+                                            f"{submitted_code}\n\n"
+                                            "[SYSTEM: You are no longer in Compiler Mode. Acknowledge the submission, "
+                                            "briefly evaluate their code, and move on to the next topic.]"
+                                        ))],
+                                    ),
+                                    turn_complete=True,
+                                )
 
                 ai_task = asyncio.create_task(stream_ai_to_browser())
                 mic_task = asyncio.create_task(stream_browser_to_ai())
@@ -349,7 +427,7 @@ async def handle_voice_interview(websocket: WebSocket):
                         raise task.exception()
 
             if interview_ended:
-                break  # do not reconnect — the interview is genuinely over
+                break 
             elif go_away_triggered:
                 continue
             else:
@@ -359,15 +437,13 @@ async def handle_voice_interview(websocket: WebSocket):
             print("👋 Student disconnected or closed tab.")
             break
         except Exception as e:
-            print("Gemini voice connection closed:", e)
-            break
+            print(f"⚠️ Gemini voice connection dropped (Error: {e}). Auto-reconnecting in 1 second...")
+            await asyncio.sleep(1)
+            continue
 
-    # Flush anything left in the buffers so no trailing words get lost
     flush_ai()
     flush_candidate()
 
-    # Print the full ordered transcript — this is the artifact the future
-    # feedback feature will analyze.
     if transcript_log:
         print("\n" + "=" * 60)
         print("FULL INTERVIEW TRANSCRIPT")
@@ -377,9 +453,6 @@ async def handle_voice_interview(websocket: WebSocket):
             print(f"[{label}] {line}")
         print("=" * 60 + "\n")
 
-    # Tell the browser the interview is officially done so it can stop the
-    # mic, close its own audio contexts, and update the UI — then close
-    # the socket from our side.
     if interview_ended:
         try:
             await websocket.send_text("__INTERVIEW_ENDED__")

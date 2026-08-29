@@ -6,15 +6,121 @@
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #121212; color: #ffffff; text-align: center; padding-top: 50px; }
         .container { max-width: 500px; margin: 0 auto; background: #1e1e1e; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
-        input[type="text"] {
+        
+        /* Grouped input and select styles for the new dropdown */
+        input[type="text"], select {
             width: 100%; padding: 12px; margin-top: 12px; margin-bottom: 20px;
             border-radius: 6px; border: 1px solid #333; background: #2a2a2a; color: #fff;
             font-size: 15px; box-sizing: border-box;
         }
+        
         button { background: #3b82f6; color: white; border: none; padding: 12px 30px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; transition: 0.2s; }
         button:hover { background: #2563eb; }
         button:disabled { background: #4b5563; cursor: not-allowed; }
         #status { margin-top: 20px; color: #a1a1aa; font-style: italic; }
+
+        /* ================= Code challenge popup ================= */
+        #popup-overlay {
+            display: none !important;
+            position: fixed !important;
+            top: 0; left: 0; right: 0; bottom: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.8) !important;
+            z-index: 9999 !important;
+            align-items: center;
+            justify-content: center;
+            text-align: left;
+        }
+        #popup-overlay.visible { display: flex !important; }
+
+        #popup-panel {
+            width: 85vw;
+            max-width: 850px;
+            height: 80vh;
+            max-height: 700px;
+            background: #1e1e1e;
+            border-radius: 10px;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            text-align: left;
+            position: relative;
+        }
+
+        #loading-state {
+            flex: 1;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+        }
+        #loading-state.visible { display: flex; }
+
+        .spinner {
+            width: 36px;
+            height: 36px;
+            border: 3px solid #333;
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        #loading-text { color: #a1a1aa; font-size: 15px; }
+
+        #problem-content {
+            display: none;
+            flex-direction: column;
+            flex: 1;
+            min-height: 0;
+        }
+        #problem-content.visible { display: flex; }
+
+        #problem-header {
+            padding: 20px 24px 16px;
+            border-bottom: 1px solid #2f2f2f;
+            flex-shrink: 0;
+        }
+        #problem-title { font-size: 18px; font-weight: 700; margin: 0 0 6px 0; }
+        #problem-meta {
+            display: inline-block;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 999px;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+        #problem-meta.easy   { background: #14532d; color: #86efac; }
+        #problem-meta.medium { background: #713f12; color: #fde047; }
+        #problem-description { font-size: 14px; line-height: 1.5; color: #d4d4d8; margin: 0; }
+
+        #editor-container { flex: 1; min-height: 0; }
+
+        #popup-footer {
+            padding: 14px 24px;
+            border-top: 1px solid #2f2f2f;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+        #submit-btn {
+            background: #16a34a;
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        #submit-btn:hover { background: #15803d; }
+        #submit-btn:disabled { background: #4b5563; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -23,22 +129,52 @@
         <p>Ensure your microphone is connected and your laptop volume is turned up.</p>
 
         <input type="text" id="topic-input" placeholder="e.g. Python backend development, JavaScript, React..." />
+        
+        <!-- Difficulty Selector -->
+        <select id="difficulty-input">
+            <option value="Beginner">Level: Beginner (Fundamentals & Syntax)</option>
+            <option value="Intermediate" selected>Level: Intermediate (Real-World & Edge Cases)</option>
+            <option value="Hard">Level: Hard (Optimization & Scaling)</option>
+        </select>
 
         <br>
         <button id="start-btn" onclick="startVoiceStream()">Start Interview</button>
         <p id="status">Ready to connect...</p>
     </div>
 
+    <!-- ================= Code challenge popup ================= -->
+    <div id="popup-overlay">
+        <div id="popup-panel">
+            <div id="loading-state">
+                <div class="spinner"></div>
+                <div id="loading-text">Preparing your coding exercise, please wait a moment...</div>
+            </div>
+            <div id="problem-content">
+                <div id="problem-header">
+                    <div id="problem-title"></div>
+                    <span id="problem-meta"></span>
+                    <p id="problem-description"></p>
+                </div>
+                <div id="editor-container"></div>
+                <div id="popup-footer">
+                    <button id="submit-btn" onclick="handleSubmit()">Submit</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monaco Editor loader -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
+
     <script>
     let ws;
-    let recordCtx;   // 16kHz - for mic input to Gemini
-    let playCtx;     // 24kHz - for Gemini's audio output
+    let recordCtx;   
+    let playCtx;     
     let nextStartTime = 0;
-    let micStream;   // raw getUserMedia stream, needed to stop mic hardware
+    let micStream;   
     let micProcessor;
 
     function shutdownEverything(message) {
-        // Stop the mic hardware itself (this turns off the browser's "recording" indicator)
         if (micStream) {
             micStream.getTracks().forEach(track => track.stop());
         }
@@ -58,6 +194,7 @@
         document.getElementById("start-btn").disabled = false;
         document.getElementById("start-btn").innerText = "Start New Interview";
         document.getElementById("topic-input").disabled = false;
+        document.getElementById("difficulty-input").disabled = false;
     }
 
     async function startVoiceStream() {
@@ -77,20 +214,20 @@
         nextStartTime = playCtx.currentTime;
 
         ws.onopen = () => {
-            // First message MUST be the topic as plain text — the backend
-            // is waiting on receive_text() before it does anything else.
-            ws.send(topic);
+            // Package both topic and difficulty into a JSON string
+            const initData = {
+                topic: topic,
+                difficulty: document.getElementById("difficulty-input").value
+            };
+            ws.send(JSON.stringify(initData));
         };
 
         ws.onclose = () => {
-            // Covers cases where the connection drops for reasons other than
-            // the explicit end signal below (e.g. network issue, server crash).
             if (document.getElementById("start-btn").disabled) {
                 shutdownEverything("Connection closed.");
             }
         };
 
-        // A. PLAYBACK: queue each chunk back-to-back instead of overlapping
         ws.onmessage = async (event) => {
             if (event.data instanceof ArrayBuffer) {
                 document.getElementById("status").innerText = "AI Recruiter is speaking...";
@@ -111,26 +248,34 @@
                 source.start(startAt);
                 nextStartTime = startAt + audioBuffer.duration;
             } else if (typeof event.data === "string") {
-                // Text control messages from the backend
                 if (event.data === "__INTERVIEW_ENDED__") {
-                    // Give the last chunk of AI audio a moment to actually finish
-                    // playing before we tear down the audio contexts.
                     const remainingMs = Math.max(0, (nextStartTime - playCtx.currentTime) * 1000) + 300;
                     setTimeout(() => shutdownEverything("Interview ended. Thanks for chatting!"), remainingMs);
+                }
+                try {
+                    const payload = JSON.parse(event.data);
+                    if (payload.type === "code_challenge_loading") {
+                        showPopup();  
+                    } else if (payload.type === "code_challenge") {
+                        renderProblem(payload.problem);
+                    } else if (payload.type === "code_challenge_failed") {
+                        hidePopup();
+                    }
+                } catch (e) {
                 }
             }
         };
 
-        // B. RECORDING: mic -> 16kHz PCM -> Python
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             micStream = stream;
-            document.getElementById("status").innerText = "Connected! Say hello to the interviewer.";
+            document.getElementById("status").innerText = "Connected! The interviewer will start in a moment...";
             document.getElementById("start-btn").disabled = true;
             document.getElementById("topic-input").disabled = true;
+            document.getElementById("difficulty-input").disabled = true;
 
             const source = recordCtx.createMediaStreamSource(stream);
-            const processor = recordCtx.createScriptProcessor(2048, 1, 1);
+            const processor = recordCtx.createScriptProcessor(8192, 1, 1);
             micProcessor = processor;
 
             source.connect(processor);
@@ -151,6 +296,75 @@
             document.getElementById("status").innerText = "Error: Access to microphone denied.";
             console.error(err);
         }
+    }
+
+    let monacoEditorInstance = null;
+    let monacoReady = false;
+
+    require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' } });
+    require(['vs/editor/editor.main'], function () {
+        monacoReady = true;
+    });
+
+    function mapLanguageToMonaco(lang) {
+        const map = { python: "python", javascript: "javascript", js: "javascript",
+                      typescript: "typescript", java: "java", cpp: "cpp", "c++": "cpp" };
+        return map[(lang || "").toLowerCase()] || "plaintext";
+    }
+
+    function showPopup() {
+        document.getElementById("popup-overlay").classList.add("visible");
+        document.getElementById("loading-state").classList.add("visible");
+        document.getElementById("problem-content").classList.remove("visible");
+    }
+
+    function hidePopup() {
+        document.getElementById("popup-overlay").classList.remove("visible");
+        document.getElementById("loading-state").classList.remove("visible");
+        document.getElementById("problem-content").classList.remove("visible");
+        if (monacoEditorInstance) {
+            monacoEditorInstance.dispose();
+            monacoEditorInstance = null;
+        }
+    }
+
+    function renderProblem(problem) {
+        document.getElementById("loading-state").classList.remove("visible");
+        document.getElementById("problem-content").classList.add("visible");
+        document.getElementById("problem-title").textContent = problem.title;
+
+        const metaEl = document.getElementById("problem-meta");
+        metaEl.textContent = problem.difficulty;
+        metaEl.className = problem.difficulty === "medium" ? "medium" : "easy";
+
+        document.getElementById("problem-description").textContent = problem.description;
+
+        const waitForMonaco = setInterval(() => {
+            if (monacoReady) {
+                clearInterval(waitForMonaco);
+                const container = document.getElementById("editor-container");
+                container.innerHTML = "";
+                monacoEditorInstance = monaco.editor.create(container, {
+                    value: problem.starter_code,
+                    language: mapLanguageToMonaco(problem.language),
+                    theme: "vs-dark",
+                    fontSize: 14,
+                    minimap: { enabled: false },
+                    automaticLayout: true,
+                    scrollBeyondLastLine: false,
+                });
+            }
+        }, 50);
+    }
+
+    function handleSubmit() {
+        const code = monacoEditorInstance ? monacoEditorInstance.getValue() : "";
+        console.log("SUBMITTED CODE:\n", code);
+
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: "code_submission", code: code }));
+        }
+        hidePopup();
     }
     </script>
 </body>
