@@ -125,12 +125,43 @@
 </head>
 <body>
     <div class="container">
-        <h2>🎙️ AI Technical Interview Room</h2>
-        <p>Ensure your microphone is connected and your laptop volume is turned up.</p>
+        <h2 id="page-title">🎙️ AI Technical Interview Room</h2>
+        <p id="page-subtitle">Ensure your microphone is connected and your laptop volume is turned up.</p>
 
-        <input type="text" id="topic-input" placeholder="e.g. Python backend development, JavaScript, React..." />
-        
-        <!-- Difficulty Selector -->
+        <!-- Mode Selector: Real Interview (ground reality) vs Technical Round (dense coding-only)
+             vs Playground (low-stakes practice) -->
+        <select id="mode-input" onchange="toggleMode()">
+            <option value="real">🎯 Real Interview — full mock interview</option>
+            <option value="technical_round">💻 Technical Round — intro + 5-6 coding rounds</option>
+            <option value="playground">🧪 Playground — casual practice, no pressure</option>
+        </select>
+
+        <!-- Language Selector: real programming languages ONLY, no frameworks -->
+        <select id="language-input" onchange="toggleOtherInput('language')">
+            <option value="" disabled selected>Select your language...</option>
+            <option value="python">Python</option>
+            <option value="javascript">JavaScript</option>
+            <option value="typescript">TypeScript</option>
+            <option value="java">Java</option>
+            <option value="csharp">C#</option>
+            <option value="cpp">C++</option>
+            <option value="other">Other (type below)</option>
+        </select>
+        <input type="text" id="language-other-input" placeholder="Type your language (e.g. Rust, Go, PHP)" style="display: none;" />
+
+        <!-- Role Selector: role-shape, not framework -->
+        <select id="role-input" onchange="toggleOtherInput('role')">
+            <option value="" disabled selected>Select your role...</option>
+            <option value="backend">Backend</option>
+            <option value="frontend">Frontend</option>
+            <option value="fullstack">Full-Stack</option>
+            <option value="mobile">Mobile</option>
+            <option value="devops">DevOps / Infrastructure</option>
+            <option value="other">Other (type below)</option>
+        </select>
+        <input type="text" id="role-other-input" placeholder="Type your role (e.g. Embedded Systems, ML Engineer)" style="display: none;" />
+
+        <!-- Difficulty Selector — REAL INTERVIEW MODE ONLY. Playground has no difficulty at all. -->
         <select id="difficulty-input">
             <option value="Beginner">Level: Beginner (Fundamentals & Syntax)</option>
             <option value="Intermediate" selected>Level: Intermediate (Real-World & Edge Cases)</option>
@@ -141,6 +172,7 @@
         <button id="start-btn" onclick="startVoiceStream()">Start Interview</button>
         <p id="status">Ready to connect...</p>
     </div>
+
 
     <!-- ================= Code challenge popup ================= -->
     <div id="popup-overlay">
@@ -193,14 +225,64 @@
         document.getElementById("status").innerText = message || "Interview ended.";
         document.getElementById("start-btn").disabled = false;
         document.getElementById("start-btn").innerText = "Start New Interview";
-        document.getElementById("topic-input").disabled = false;
+        document.getElementById("mode-input").disabled = false;
+        document.getElementById("language-input").disabled = false;
+        document.getElementById("language-other-input").disabled = false;
+        document.getElementById("role-input").disabled = false;
+        document.getElementById("role-other-input").disabled = false;
         document.getElementById("difficulty-input").disabled = false;
     }
 
+    function toggleMode() {
+        const mode = document.getElementById("mode-input").value;
+        const difficultyEl = document.getElementById("difficulty-input");
+        const titleEl = document.getElementById("page-title");
+        const subtitleEl = document.getElementById("page-subtitle");
+        const startBtn = document.getElementById("start-btn");
+
+        if (mode === "playground") {
+            difficultyEl.style.display = "none";
+            titleEl.innerText = "🧪 Practice Playground";
+            subtitleEl.innerText = "No pressure — just practice, get a coding problem, and build confidence.";
+            startBtn.innerText = "Start Practicing";
+        } else if (mode === "technical_round") {
+            difficultyEl.style.display = "none";
+            titleEl.innerText = "💻 Technical Round";
+            subtitleEl.innerText = "Brief intro, then straight into 5-6 back-to-back coding rounds.";
+            startBtn.innerText = "Start Technical Round";
+        } else {
+            difficultyEl.style.display = "block";
+            titleEl.innerText = "🎯 AI Technical Interview Room";
+            subtitleEl.innerText = "Ensure your microphone is connected and your laptop volume is turned up.";
+            startBtn.innerText = "Start Interview";
+        }
+    }
+
+    function toggleOtherInput(kind) {
+        const select = document.getElementById(kind + "-input");
+        const otherInput = document.getElementById(kind + "-other-input");
+        otherInput.style.display = (select.value === "other") ? "block" : "none";
+    }
+
+    function resolveSelection(kind) {
+        // Returns the chosen dropdown value, or the typed "Other" text if that's selected.
+        const select = document.getElementById(kind + "-input");
+        if (select.value === "other") {
+            return document.getElementById(kind + "-other-input").value.trim();
+        }
+        return select.value;
+    }
+
     async function startVoiceStream() {
-        const topic = document.getElementById("topic-input").value.trim();
-        if (!topic) {
-            document.getElementById("status").innerText = "Please enter a topic to be interviewed in.";
+        const language = resolveSelection("language");
+        const role = resolveSelection("role");
+
+        if (!language) {
+            document.getElementById("status").innerText = "Please select (or type) your language.";
+            return;
+        }
+        if (!role) {
+            document.getElementById("status").innerText = "Please select (or type) your role.";
             return;
         }
 
@@ -214,9 +296,11 @@
         nextStartTime = playCtx.currentTime;
 
         ws.onopen = () => {
-            // Package both topic and difficulty into a JSON string
+            // Package mode, language, role, and difficulty into a JSON string
             const initData = {
-                topic: topic,
+                mode: document.getElementById("mode-input").value,
+                language: language,
+                role: role,
                 difficulty: document.getElementById("difficulty-input").value
             };
             ws.send(JSON.stringify(initData));
@@ -271,7 +355,11 @@
             micStream = stream;
             document.getElementById("status").innerText = "Connected! The interviewer will start in a moment...";
             document.getElementById("start-btn").disabled = true;
-            document.getElementById("topic-input").disabled = true;
+            document.getElementById("mode-input").disabled = true;
+            document.getElementById("language-input").disabled = true;
+            document.getElementById("language-other-input").disabled = true;
+            document.getElementById("role-input").disabled = true;
+            document.getElementById("role-other-input").disabled = true;
             document.getElementById("difficulty-input").disabled = true;
 
             const source = recordCtx.createMediaStreamSource(stream);
