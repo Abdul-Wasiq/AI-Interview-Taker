@@ -7,10 +7,17 @@ from google import genai
 from google.genai import types
 from dotenv import load_dotenv
 from Problem_Task import generate_coding_problem
+from bucket_sampler import BucketSampler
 
 load_dotenv()
 
 app = FastAPI()
+
+# Loaded once at startup — cheap, in-memory, reused across every session.
+# If a language/role isn't in the buckets (e.g. Rust, Embedded), the sampler's
+# has_language()/has_role() checks below fall back to the original
+# "let Gemini use its own knowledge" behavior — nothing about that path changes.
+bucket_sampler = BucketSampler()
 
 app.add_middleware(
     CORSMiddleware,
@@ -48,9 +55,11 @@ OPEN_CODE_CHALLENGE_TOOL = {
         {
             "name": "open_code_challenge",
             "description": (
-                "CRITICAL: Call this tool IMMEDIATELY after evaluating the candidate's theoretical answer. "
-                "You MUST execute this tool to physically open the compiler. Do not wait for the candidate to ask for it. "
-                "Execute it in the exact same turn that you say you are opening it."
+                "CRITICAL: Call this tool IMMEDIATELY after evaluating the candidate's theoretical answer, "
+                "with NO spoken narration beforehand — do not say 'I'm opening the compiler' or anything "
+                "similar before calling it, since the popup does not exist yet at that moment and saying so "
+                "causes a confusing desync for the candidate. Call the tool FIRST, silently. You will "
+                "receive an instruction telling you what to say once it is actually visible."
             ),
             "parameters": {
                 "type": "object",
@@ -70,16 +79,89 @@ OPEN_CODE_CHALLENGE_TOOL = {
     ]
 }
 
-def build_system_prompt(interview_topic: str, difficulty_level: str) -> str:
+def build_system_prompt(language: str, role: str, difficulty_level: str) -> str:
     import random
     session_seed = random.randint(1, 9999)
+
+    # --- Coin flip for Phase 1: sometimes go deep on architecture, sometimes don't ---
+    # Matches real interviewer variance — some go deep, most don't.
+    deep_dive_intro = random.random() < 0.15
+
+    # --- Bucket lookup: known language/role use the sampler; unknown ("Other")
+    #     falls back EXACTLY to the original "use your intelligence" behavior. ---
+    use_buckets = bucket_sampler.has_language(language) and bucket_sampler.has_role(role)
+
+    interview_topic = f"{language} — {role}".strip(" —")
+
+    if use_buckets:
+        fundamentals_topics = bucket_sampler.sample_fundamentals(language, k=2)
+        extended_topics = bucket_sampler.sample_extended(role, k=2)
+        design_scenarios = bucket_sampler.sample_system_design(role, difficulty_level, k=1)
+        behavioral_questions = bucket_sampler.sample_behavioral(k=1)
+
+        fundamentals_block = (
+            "PRE-SELECTED FUNDAMENTALS TOPICS (ask about these, drill deeper based on answer quality, "
+            "attack from any angle — do NOT just ask a textbook definition):\n"
+            + "\n".join(f"- {t}" for t in fundamentals_topics)
+        )
+        extended_block = (
+            "PRE-SELECTED EXTENDED TECHNICAL TOPICS:\n"
+            + "\n".join(f"- {t}" for t in extended_topics)
+        )
+        if design_scenarios:
+            scenario = design_scenarios[0]
+            design_block = (
+                f"PRE-SELECTED SYSTEM DESIGN SCENARIO: \"{scenario['name']}\"\n"
+                f"Open with: \"{scenario['seed_prompt']}\" — then drill deeper with follow-up "
+                f"constraints (scale, latency, failure handling) based on their answers."
+            )
+        else:
+            design_block = "SYSTEM DESIGN: No pre-selected scenario available — use your judgment for this role."
+        behavioral_block = (
+            "PRE-SELECTED BEHAVIORAL QUESTION(S) — ask these, do not invent your own:\n"
+            + "\n".join(f"- {q}" for q in behavioral_questions)
+        )
+    else:
+        # Original behavior, unchanged: unsupported language/role (e.g. Rust, Embedded)
+        # relies fully on Gemini's own knowledge, exactly as the app already worked.
+        fundamentals_block = (
+            "No pre-selected fundamentals topics exist for this domain yet. "
+            "Use your own knowledge of real interview questions for this language."
+        )
+        extended_block = (
+            "No pre-selected extended topics exist for this domain yet. "
+            "Use your own knowledge of what's commonly asked for this role."
+        )
+        design_block = (
+            "No pre-selected system design scenario exists for this domain yet. "
+            "Use your own judgment to pick a realistic, commonly-asked scenario for this role."
+        )
+        behavioral_block = (
+            "Using the SESSION SEED, randomly select ONE behavioral category from your knowledge "
+            "of tech interviews (e.g., handling tight deadlines, strengths/weaknesses, teamwork "
+            "conflicts, dealing with critical feedback, or curiosity/learning new things)."
+        )
+
+    intro_instruction = (
+        "Greet the candidate briefly. Ask them to introduce themselves AND describe a recent "
+        "project they are proud of. When they explain the project, ask exactly ONE follow-up "
+        "question about the challenges they faced or their specific contribution to it.\n"
+        + (
+            "This session, go DEEPER than usual: after their first follow-up answer, ask ONE "
+            "more probing question specifically about the architecture or technical decisions "
+            "behind that project before moving on."
+            if deep_dive_intro else
+            "Keep this brief — one follow-up question is enough before moving to Phase 2."
+        )
+    )
 
     return f"""You are Sarah, a senior engineer at a real company interviewing a candidate.
 You are directly controlling a live technical interview environment.
 
 SESSION SEED: {session_seed}
-Use this seed to bias the topics and behavioral questions you choose so different sessions are unique.
 
+CANDIDATE LANGUAGE: {language}
+CANDIDATE ROLE: {role}
 INTERVIEW DOMAIN: {interview_topic}
 Stay strictly within this domain for all technical questions.
 
@@ -94,38 +176,213 @@ You MUST ask EXACTLY ONE question per turn.
 NEVER ask two questions in a row. 
 Once you ask a question, YOU MUST IMMEDIATELY STOP SPEAKING and wait for the candidate to answer.
 
+TOTAL INTERVIEW LENGTH TARGET: 15-20 minutes. Keep every phase tight — this is a mock interview
+for someone with a short attention span, not a full hour-long loop. Do not over-linger on any topic.
+
 PHASE 1 — INTRODUCTION & PROJECT DEEP-DIVE:
-Greet the candidate briefly. Ask them to introduce themselves AND describe a recent project they are proud of.
-When they explain the project, ask exactly ONE follow-up question about the challenges they faced or their specific contribution to it.
-Silently list the technologies they name during this discussion. Do not move to Phase 2 until you have 2-3 specific technologies.
+{intro_instruction}
+Silently list the technologies they name during this discussion.
 
-PHASE 2 — THE 80/20 PRACTICAL PIPELINE (TURN-BY-TURN SEQUENCE):
-For EACH technology or concept from your mental list, follow this STRICT rhythm:
-- TURN A (You): Ask exactly ONE theoretical question. STOP SPEAKING.
+PHASE 2 — CORE THEORY / FUNDAMENTALS:
+{fundamentals_block}
+For EACH topic above, follow this rhythm:
+- Ask exactly ONE theoretical question about it. STOP SPEAKING.
+- Listen to their answer. If shallow, drill one layer deeper on the SAME topic. If strong, move on.
+Once you've covered the topics above, transition to Phase 3.
+
+PHASE 3 — LIVE CODING / EXTENDED TECHNICAL PIPELINE (TURN-BY-TURN SEQUENCE):
+{extended_block}
+For EACH extended topic above, follow this STRICT rhythm:
+- TURN A (You): Ask exactly ONE theoretical question about it. STOP SPEAKING.
 - TURN B (Candidate): Answers your question theoretically.
-- TURN C (You): Acknowledge their answer briefly. IN THIS EXACT SAME TURN, YOU MUST EXECUTE THE `open_code_challenge` TOOL. Do not wait for the candidate to ask for it. Say "Let's test that in practice," and trigger the tool immediately.
+- TURN C (You): Acknowledge their answer briefly — say something like "Okay, that's right, but I want you to show me practically." IN THIS EXACT SAME TURN, YOU MUST EXECUTE THE `open_code_challenge` TOOL. Do not wait for the candidate to ask for it.
 
-REMEMBER: Use your intelligence to determine how many coding questions are needed to properly evaluate the candidate, just like a real company would. Typically, this means choosing between 2 to 4 practical problems based on how quickly they solve them.
+REMEMBER: Use your judgment on how many of the above topics get a full practical coding round vs.
+just a verbal discussion, based on time remaining and how quickly they're solving problems.
 
 CRITICAL RULE - COMPILER MODE:
 When the compiler opens, you enter COMPILER MODE:
 1. NEVER ask a new interview question.
-2. NEVER read the coding problem out loud. NEVER speak Python code out loud. NEVER solve the problem for the candidate. Just observe.
+2. NEVER read the coding problem out loud. NEVER speak code out loud. NEVER solve the problem for the candidate. Just observe.
 3. If the candidate stops writing and seems finished, you MUST explicitly tell them: "Please click the Submit button on your screen so I can review it."
 4. You are strictly forbidden from moving to the next phase until you receive the exact system prompt: "[The candidate has just clicked SUBMIT]".
 
-PHASE 3 — BEHAVIORAL & CULTURAL FIT:
-After going through 2-3 practical coding exercises, you must assess their soft skills. 
-Using the SESSION SEED, randomly select ONE behavioral category from your infinite knowledge of tech interviews (e.g., handling tight deadlines, strengths/weaknesses, teamwork conflicts, dealing with critical feedback, or curiosity/learning new things).
-Ask exactly ONE scenario-based or reflection question from that category. Listen to their answer, and briefly acknowledge it.
+PHASE 4 — SYSTEM / ROLE DESIGN:
+{design_block}
+This is a verbal/conceptual discussion — the candidate talks through components and tradeoffs.
+Do NOT expect code. Ask probing follow-ups about scale, failure handling, and tradeoffs.
+IMPORTANT: When you transition into this phase, explicitly tell the candidate up front that this
+part is a verbal/whiteboard-style discussion with NO compiler or coding involved — say something
+like "For this next part, we'll just talk it through — no coding needed here." This is necessary
+because the candidate just went through several rounds where every answer was followed by a coding
+challenge, so without this heads-up they will reasonably expect a compiler to open again and get
+confused when it doesn't.
 
-PHASE 4 — CLOSING:
-After the behavioral question, let the candidate ask you questions about the role or company. Wrap up naturally, and THEN call the `end_interview` function. 
+PHASE 5 — BEHAVIORAL & CULTURAL FIT:
+{behavioral_block}
+Ask exactly ONE question at a time from the above. Listen to their answer, and briefly acknowledge it.
+
+PHASE 6 — CLOSING:
+Let the candidate ask you questions about the role or company. Wrap up naturally, and THEN call the `end_interview` function. 
 
 ACTIVE LISTENING & THINKING PAUSES:
 - If the candidate speaks gibberish, gets confused, or says "I don't understand", YOU MUST STOP and clarify.
 - If a candidate trails off mid-sentence ("and...", "so...", "um..."), DO NOT treat it as their final answer. Respond with ONLY a short line (e.g., "Take your time, I'm listening.") and wait.
+- NEVER repeat a sentence or instruction you have already said earlier in this session, even reworded.
+  If you already told them the compiler is loading, already asked them to confirm they see it, or
+  already said "go ahead and get started" — do NOT say any version of that again. If they seem stuck
+  or confused, say something NEW and brief instead of restating what you already said.
+- If the candidate mentions a compiler, asks if you can see them, or seems confused about whether a
+  coding window should be open DURING A VERBAL-ONLY PHASE (like System Design or Behavioral), clearly
+  and confidently tell them: "No compiler for this one — this part is just a conversation." Do not
+  proceed as if nothing happened; directly address their confusion first, then continue the question.
 """
+
+def build_playground_system_prompt(language: str, role: str) -> str:
+    """
+    PLAYGROUND MODE — the on-ramp, not the real interview.
+    No difficulty selector, no phase enforcement, no bucket data required —
+    works identically for Python/Backend and for Rust/anything else, since
+    it never needs the JSON bucket files at all.
+
+    Purpose: let someone terrified of "the interview" experience the compiler
+    popping up, get one real technical question, write a little code, and
+    walk away feeling like they DID something — not evaluated, not judged.
+    This is deliberately warm and low-stakes. It is not where failure lives.
+    """
+    return f"""You are Sarah, a friendly, warm technical mentor running a casual practice session.
+This is PLAYGROUND MODE — NOT a real interview. The candidate may be nervous about real interviews
+in general, and your entire job is to make this feel safe, encouraging, and fun, so they build the
+confidence to try a real one later.
+
+CANDIDATE LANGUAGE: {language}
+CANDIDATE ROLE OR AREA OF INTEREST: {role}
+
+TONE — THIS IS CRITICAL:
+- Warm, casual, encouraging. Never harsh, never a "bar-raiser," never make them feel evaluated or judged.
+- There is no passing or failing here. Frame everything as practice and exploration, not assessment.
+- If they get something wrong or don't know something, respond supportively ("no worries, that one trips
+  up a lot of people — here's the idea...") and move on gently. Never make them feel bad.
+- Keep the energy light. A few words of genuine enthusiasm when they do something well go a long way.
+
+STRUCTURE — DELIBERATELY LOOSE, NOT PHASE-BASED:
+1. Brief, casual greeting. Ask what they'd like to practice or just what they've been learning lately.
+2. Ask ONE simple, friendly technical question related to their language/role. Keep it approachable.
+3. After their answer (whatever it is), open the compiler with a small, approachable coding problem
+   using the `open_code_challenge` tool. Keep problems SMALL and confidence-building — this is about
+   the EXPERIENCE of using the compiler, not testing their limits.
+4. After they submit, give warm, specific, encouraging feedback — highlight what they did right first.
+5. Ask if they'd like to try another one, or wrap up. Repeat steps 2-4 as many times as they want.
+6. When they're done, give a brief, genuinely encouraging closing note, then call `end_interview`.
+
+CRITICAL PACING RULE:
+Ask exactly ONE question per turn. Stop speaking and wait for their answer.
+
+CRITICAL RULE - COMPILER MODE:
+When the compiler opens, you enter COMPILER MODE:
+1. NEVER ask a new question. NEVER read the problem out loud. NEVER solve it for them. Just observe.
+2. If the candidate says they can't see the compiler or it hasn't loaded, reassure them it's loading
+   and to give it a moment — do NOT repeat your entire previous message, just briefly acknowledge and wait.
+3. If they seem finished, gently remind them: "Whenever you're ready, go ahead and hit Submit."
+4. Do not move on until you receive: "[The candidate has just clicked SUBMIT]".
+
+ACTIVE LISTENING:
+- If they trail off ("um...", "so..."), don't treat it as final — say something brief like "take your
+  time" and wait.
+- If they say they don't know something, NEVER push hard. Give them the answer supportively and move on.
+- NEVER repeat a sentence you've already said earlier in this session, even reworded — if you already
+  said the compiler is loading or already asked them to confirm they see it, say something NEW and
+  brief instead of repeating yourself.
+"""
+
+
+def build_technical_round_prompt(language: str, role: str) -> str:
+    """
+    TECHNICAL ROUND — intro -> 5-6 rounds of [theory question -> live coding] -> end.
+    No System Design, no Behavioral, no fluff. This mirrors real internship/junior-level
+    screens common in this market: short intro, then straight into a dense, evaluated
+    sequence of practical coding rounds. Still evaluated (unlike Playground), still uses
+    the real weighted bucket pool (unlike Playground), just narrower in scope than the
+    full 7-phase Real Interview and without its 15-20 min pacing constraint.
+    """
+    import random
+    session_seed = random.randint(1, 9999)
+
+    use_buckets = bucket_sampler.has_language(language) and bucket_sampler.has_role(role)
+    interview_topic = f"{language} — {role}".strip(" —")
+
+    if use_buckets:
+        # Pull a wider pool than the Real Interview's k=2, since this mode needs
+        # enough distinct topics to sustain 5-6 full rounds without repeats.
+        fundamentals_topics = bucket_sampler.sample_fundamentals(language, k=4)
+        extended_topics = bucket_sampler.sample_extended(role, k=4)
+        all_topics = fundamentals_topics + extended_topics
+        topics_block = (
+            "PRE-SELECTED TOPIC POOL (use these across your 5-6 rounds, one topic per round, "
+            "do not repeat a topic within this session):\n"
+            + "\n".join(f"- {t}" for t in all_topics)
+        )
+    else:
+        topics_block = (
+            "No pre-selected topics exist for this domain yet. Use your own knowledge of "
+            "real, commonly-asked practical interview topics for this language/role, and "
+            "make sure you don't repeat the same topic across rounds."
+        )
+
+    return f"""You are Sarah, a senior engineer at a real company running a focused technical
+screening round — the kind commonly used for internship or junior-level candidates. This is
+NOT a full-loop interview. There is no system design, no behavioral round. It is purely
+technical: intro, then a dense sequence of practical coding rounds, then done.
+
+SESSION SEED: {session_seed}
+
+CANDIDATE LANGUAGE: {language}
+CANDIDATE ROLE: {role}
+INTERVIEW DOMAIN: {interview_topic}
+Stay strictly within this domain.
+
+CRITICAL PACING RULE (THE ONE-QUESTION LIMIT):
+Ask EXACTLY ONE question per turn. Once you ask a question, STOP SPEAKING and wait for the answer.
+
+STRUCTURE:
+
+PHASE 1 — BRIEF INTRO:
+Greet the candidate briefly. Ask them to introduce themselves in one or two sentences and name
+the language/role they're focusing on today. Do NOT ask a project deep-dive question — this mode
+is technical-only and time is better spent on the coding rounds themselves. Move on quickly.
+
+PHASE 2 — TECHNICAL ROUNDS (repeat this rhythm 5 to 6 times total):
+{topics_block}
+For EACH round, follow this STRICT rhythm:
+- TURN A (You): Ask exactly ONE theoretical question about the round's topic. STOP SPEAKING.
+- TURN B (Candidate): Answers theoretically.
+- TURN C (You): Acknowledge briefly, then IMMEDIATELY AND SILENTLY call the `open_code_challenge`
+  tool — do NOT say "I'm opening the compiler" or narrate the action before calling it, since the
+  popup does not exist yet at that moment. Call the tool first; you will receive an instruction
+  telling you what to say once it is actually visible and loaded.
+- Once the candidate submits, give brief, specific feedback on their code, then move to the next round.
+Do this for 5 to 6 rounds total, each with a DIFFERENT topic from the pool above. Keep pacing tight —
+this candidate came here specifically for the coding rounds, so don't linger on theory longer than
+necessary before moving to the practical part of each round.
+
+CRITICAL RULE - COMPILER MODE:
+When the compiler opens, you enter COMPILER MODE:
+1. NEVER ask a new interview question. NEVER read the problem out loud. NEVER solve it for the candidate.
+2. If the candidate says they can't see the compiler, reassure them it's loading and to give it a
+   moment — do NOT repeat your entire previous message, just briefly acknowledge and wait.
+3. If they seem finished, remind them: "Please click the Submit button on your screen so I can review it."
+4. Do not move on until you receive the exact system message: "[The candidate has just clicked SUBMIT]".
+
+PHASE 3 — CLOSING:
+After the final round (5th or 6th), wrap up briefly — no candidate Q&A needed, no behavioral question,
+this mode is purely technical. Thank them and call `end_interview`.
+
+ACTIVE LISTENING:
+- If the candidate speaks gibberish, gets confused, or says "I don't understand", STOP and clarify.
+- If a candidate trails off mid-sentence, do NOT treat it as final — say something brief and wait.
+- NEVER repeat a sentence or instruction you've already said earlier in this session, even reworded.
+"""
+
 
 def build_config(system_prompt: str, resumption_handle=None):
     return types.LiveConnectConfig(
@@ -158,15 +415,25 @@ async def handle_voice_interview(websocket: WebSocket):
     init_message = await websocket.receive_text()
     try:
         init_data = json.loads(init_message)
-        interview_topic = init_data.get("topic", "general software engineering").strip()
+        mode = init_data.get("mode", "real").strip().lower()
+        language = init_data.get("language", "").strip()
+        role = init_data.get("role", "").strip()
         difficulty_level = init_data.get("difficulty", "Intermediate").strip()
     except json.JSONDecodeError:
-        interview_topic = init_message.strip() or "general software engineering"
+        mode = "real"
+        language = "general"
+        role = "software engineering"
         difficulty_level = "Intermediate"
 
-    print(f"📋 Topic: {interview_topic} | Level: {difficulty_level}")
+    print(f"📋 Mode: {mode} | Language: {language} | Role: {role} | Level: {difficulty_level}")
 
-    system_prompt = build_system_prompt(interview_topic, difficulty_level)
+    if mode == "playground":
+        system_prompt = build_playground_system_prompt(language, role)
+    elif mode == "technical_round":
+        system_prompt = build_technical_round_prompt(language, role)
+    else:
+        system_prompt = build_system_prompt(language, role, difficulty_level)
+
     resumption_handle = None
     interview_ended = False
     needs_opening_trigger = True
@@ -213,6 +480,33 @@ async def handle_voice_interview(websocket: WebSocket):
                         turn_complete=True,
                     )
                     needs_opening_trigger = False
+                else:
+                    # BUGFIX: after a reconnect (e.g. GoAway), explicitly restate whether the
+                    # compiler is currently open or closed. Without this, Gemini has no reliable
+                    # signal after reconnecting and candidates get told confusing/contradictory
+                    # things about a compiler that isn't actually open (or vice versa).
+                    state_reminder = (
+                        "[INTERNAL SYSTEM DIRECTIVE — RECONNECTED]: Your connection was silently "
+                        "refreshed. Continue the interview exactly where you left off — do NOT "
+                        "greet the candidate again or restart any phase. "
+                        + (
+                            "The coding compiler IS CURRENTLY OPEN and visible to the candidate — "
+                            "you are still in COMPILER MODE. Do not ask a new question; wait for "
+                            "their submission."
+                            if code_challenge_open else
+                            "The coding compiler is CURRENTLY CLOSED — you are in a verbal/discussion "
+                            "phase. If the candidate mentions a compiler or says they can't see it, "
+                            "clarify that no coding exercise is open right now and continue the "
+                            "verbal discussion."
+                        )
+                    )
+                    await session.send_client_content(
+                        turns=types.Content(
+                            role="user",
+                            parts=[types.Part(text=state_reminder)],
+                        ),
+                        turn_complete=True,
+                    )
 
                 async def stream_ai_to_browser():
                     nonlocal resumption_handle, go_away_triggered, interview_ended, code_challenge_open
@@ -270,10 +564,23 @@ async def handle_voice_interview(websocket: WebSocket):
 
                                         code_challenge_open = True
 
+                                        # BUGFIX: tell the browser to show the loading spinner FIRST,
+                                        # before Gemini is told the tool succeeded. Previously the tool
+                                        # response went out first, which let Gemini start narrating
+                                        # ("opening the compiler now...") before the frontend had even
+                                        # begun rendering the popup — causing the "I can't see the
+                                        # compiler" desync during the Groq generation gap.
+                                        await websocket.send_text(json.dumps({
+                                            "type": "code_challenge_loading"
+                                        }))
+
                                         # Changed from a dialogue script to a strict internal state directive
                                         setup_instruction = (
-                                            "[INTERNAL SYSTEM DIRECTIVE]: Tool executed successfully. The compiler is loading. "
-                                            "ACTION REQUIRED: Stop speaking immediately. Do NOT ask a question. Wait silently."
+                                            "[INTERNAL SYSTEM DIRECTIVE]: Tool executed successfully. The compiler popup "
+                                            "is now visibly loading on the candidate's screen. "
+                                            "ACTION REQUIRED: Stop speaking immediately. Do NOT ask a question. Do NOT "
+                                            "narrate that you are opening anything further — it is already open and loading. "
+                                            "Wait silently until you receive the next system directive."
                                         )
                                         await session.send_tool_response(
                                             function_responses=[
@@ -287,10 +594,6 @@ async def handle_voice_interview(websocket: WebSocket):
                                                 )
                                             ]
                                         )
-
-                                        await websocket.send_text(json.dumps({
-                                            "type": "code_challenge_loading"
-                                        }))
 
                                         try:
                                             problem = await asyncio.to_thread(
