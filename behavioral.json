@@ -1,0 +1,105 @@
+{
+  "phase": "behavioral",
+  "description": "Question-text-based bucket (unlike Phase 2/4/5 which are topic-only). Sampled at runtime: pick one category, then pick one question within it.",
+  "categories": [
+    {
+      "category": "Strengths & Weaknesses / Self-Awareness",
+      "questions": [
+        "What would you say is your biggest weakness as an engineer?",
+        "What are your three biggest strengths and three biggest weaknesses?",
+        "What aspects of your work get criticized most often, and how do you respond to that feedback?",
+        "What words would your colleagues use to describe you?",
+        "What strengths do you think matter most for this role?"
+      ]
+    },
+    {
+      "category": "Conflict / Disagreement",
+      "questions": [
+        "Tell me about a time you had a conflict with a teammate. How did you resolve it?",
+        "Tell me about a time you disagreed with your manager or a senior person's decision.",
+        "Describe a time someone pushed back on your technical approach. What did you do?",
+        "How do you generally handle disagreements with coworkers?",
+        "Tell me about a time you had to influence someone who didn't agree with you."
+      ]
+    },
+    {
+      "category": "Failure / Mistakes",
+      "questions": [
+        "Tell me about a time you failed at work or made a significant mistake.",
+        "Describe a bug or incident you caused. How did you handle it?",
+        "Tell me about a time you missed a deadline. What happened?",
+        "What's something you'd do differently if you could redo it?"
+      ]
+    },
+    {
+      "category": "Pressure / Tight Deadlines",
+      "questions": [
+        "Tell me about a time you had to deliver under a very tight deadline.",
+        "Describe how you prioritize when everything feels urgent at once.",
+        "Tell me about a time your workload became overwhelming. How did you manage it?"
+      ]
+    },
+    {
+      "category": "Leadership / Initiative",
+      "questions": [
+        "Tell me about a time you showed leadership, even without a formal title.",
+        "Describe a time you did something outside your defined responsibilities.",
+        "Tell me about a time you mentored or helped a struggling teammate."
+      ]
+    },
+    {
+      "category": "Ambiguity / Incomplete Information",
+      "questions": [
+        "Tell me about a time you had to make a decision without having all the information you needed.",
+        "Describe a situation where the requirements were unclear. How did you proceed?",
+        "How do you approach a problem when you're not sure of the right solution?"
+      ]
+    },
+    {
+      "category": "Collaboration / Teamwork",
+      "questions": [
+        "Tell me about a time you worked well as part of a team to deliver something.",
+        "Describe a project that required close collaboration across multiple teams.",
+        "Tell me about a time you had to explain a technical concept to a non-technical person."
+      ]
+    },
+    {
+      "category": "Receiving Feedback",
+      "questions": [
+        "Tell me about the most constructive feedback you've received. How did you act on it?",
+        "How do you typically respond when someone criticizes your code or approach?"
+      ]
+    },
+    {
+      "category": "Motivation / Why This Role",
+      "questions": [
+        "Why do you want to work here?",
+        "What are you looking for in your next role?",
+        "Why do you want to leave your current company?"
+      ]
+    },
+    {
+      "category": "Growth / Learning",
+      "questions": [
+        "Tell me about a time you had to quickly learn an unfamiliar technology.",
+        "What's something you've taught yourself recently, and why?",
+        "Tell me about the most difficult technical problem you've solved recently."
+      ]
+    },
+    {
+      "category": "Impact / Achievement",
+      "questions": [
+        "Tell me about your proudest accomplishment in your career so far.",
+        "Walk me through a recent project and the impact it had.",
+        "What's the most interesting project you've worked on, and why?"
+      ]
+    },
+    {
+      "category": "Ownership / Accountability",
+      "questions": [
+        "Tell me about a time you took ownership of a problem that wasn't technically your responsibility.",
+        "Describe a time you had to admit an error to your manager or a client."
+      ]
+    }
+  ]
+}

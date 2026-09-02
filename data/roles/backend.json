@@ -1,0 +1,293 @@
+{
+  "role_shape": "backend",
+
+  "extended_technical_topics": {
+    "phase": "extended_technical",
+    "description": "Topic-only bucket (no question text), same shape as language fundamentals. Role-bound, not language-bound. sampling_weight = frequency_score x recency_multiplier.",
+    "topics": [
+      {
+        "topic": "JWT — structure and stateless auth flow",
+        "difficulty": "intermediate",
+        "frequency_score": 9,
+        "recency_multiplier": 1.1,
+        "sampling_weight": 9.9
+      },
+      {
+        "topic": "JWT security considerations (expiry, refresh tokens, revocation)",
+        "difficulty": "hard",
+        "frequency_score": 7,
+        "recency_multiplier": 1.1,
+        "sampling_weight": 7.7
+      },
+      {
+        "topic": "OAuth 2.0 — authorization code flow",
+        "difficulty": "hard",
+        "frequency_score": 8,
+        "recency_multiplier": 1.0,
+        "sampling_weight": 8.0
+      },
+      {
+        "topic": "Session-based auth vs token-based auth",
+        "difficulty": "intermediate",
+        "frequency_score": 7,
+        "recency_multiplier": 1.0,
+        "sampling_weight": 7.0
+      },
+      {
+        "topic": "Authentication vs Authorization (and RBAC vs ABAC)",
+        "difficulty": "intermediate",
+        "frequency_score": 8,
+        "recency_multiplier": 1.0,
+        "sampling_weight": 8.0
+      },
+      {
+        "topic": "Database indexing strategy",
+        "difficulty": "intermediate",
+        "frequency_score": 9,
+        "recency_multiplier": 1.0,
+        "sampling_weight": 9.0
+      },
+      {
+        "topic": "N+1 query problem",
+        "difficulty": "intermediate",
+        "frequency_score": 8,
+        "recency_multiplier": 1.0,
+        "sampling_weight": 8.0
+      },
+      {
+        "topic": "Database normalization vs denormalization tradeoffs",
+        "difficulty": "intermediate",
+        "frequency_score": 6,
+        "recency_multiplier": 1.0,
+        "sampling_weight": 6.0
+      },
+      {
+        "topic": "Horizontal vs vertical scaling",
+        "difficulty": "beginner",
+        "frequency_score": 7,
+        "recency_multiplier": 1.0,
+        "sampling_weight": 7.0
+      },
+      {
+        "topic": "Caching strategies (cache-aside, write-through, TTL, invalidation)",
+        "difficulty": "hard",
+        "frequency_score": 8,
+        "recency_multiplier": 1.0,
+        "sampling_weight": 8.0
+      },
+      {
+        "topic": "REST API design principles and versioning",
+        "difficulty": "intermediate",
+        "frequency_score": 8,
+        "recency_multiplier": 1.0,
+        "sampling_weight": 8.0
+      },
+      {
+        "topic": "Rate limiting and throttling",
+        "difficulty": "intermediate",
+        "frequency_score": 7,
+        "recency_multiplier": 1.0,
+        "sampling_weight": 7.0
+      },
+      {
+        "topic": "SQL injection and prevention",
+        "difficulty": "beginner",
+        "frequency_score": 6,
+        "recency_multiplier": 1.0,
+        "sampling_weight": 6.0
+      },
+      {
+        "topic": "CORS — what it is and why it exists",
+        "difficulty": "beginner",
+        "frequency_score": 6,
+        "recency_multiplier": 1.0,
+        "sampling_weight": 6.0
+      },
+      {
+        "topic": "CSRF and how to prevent it in a stateless API",
+        "difficulty": "hard",
+        "frequency_score": 5,
+        "recency_multiplier": 1.0,
+        "sampling_weight": 5.0
+      },
+      {
+        "topic": "Password storage (hashing, salting, bcrypt vs plain hashing)",
+        "difficulty": "intermediate",
+        "frequency_score": 6,
+        "recency_multiplier": 1.0,
+        "sampling_weight": 6.0
+      },
+      {
+        "topic": "Message queues and event-driven architecture (Kafka, RabbitMQ, SQS)",
+        "difficulty": "hard",
+        "frequency_score": 7,
+        "recency_multiplier": 1.1,
+        "sampling_weight": 7.7
+      },
+      {
+        "topic": "Connection pooling",
+        "difficulty": "intermediate",
+        "frequency_score": 5,
+        "recency_multiplier": 1.0,
+        "sampling_weight": 5.0
+      },
+      {
+        "topic": "Idempotency in API design",
+        "difficulty": "hard",
+        "frequency_score": 5,
+        "recency_multiplier": 1.0,
+        "sampling_weight": 5.0
+      },
+      {
+        "topic": "Git branching strategies and collaboration workflow",
+        "difficulty": "beginner",
+        "frequency_score": 6,
+        "recency_multiplier": 1.0,
+        "sampling_weight": 6.0
+      }
+    ]
+  },
+
+  "system_design_scenarios": {
+    "phase": "system_design",
+    "description": "Scenario/seed-prompt based, NOT question-text based. Tagged by difficulty — sample within the candidate's chosen difficulty_level. One scenario per interview (k=1). sampling_weight = frequency_score x recency_multiplier.",
+    "scenarios": [
+      {
+        "name": "URL Shortener",
+        "difficulty": "beginner",
+        "frequency_score": 9,
+        "recency_multiplier": 1.0,
+        "sampling_weight": 9.0,
+        "seed_prompt": "Design a URL shortening service like Bitly."
+      },
+      {
+        "name": "Rate Limiter",
+        "difficulty": "beginner",
+        "frequency_score": 7,
+        "recency_multiplier": 1.0,
+        "sampling_weight": 7.0,
+        "seed_prompt": "Design a rate limiter for a public API."
+      },
+      {
+        "name": "Parking Lot System",
+        "difficulty": "beginner",
+        "frequency_score": 5,
+        "recency_multiplier": 1.0,
+        "sampling_weight": 5.0,
+        "seed_prompt": "Design a parking lot management system."
+      },
+      {
+        "name": "Pastebin / Text Sharing Service",
+        "difficulty": "beginner",
+        "frequency_score": 5,
+        "recency_multiplier": 1.0,
+        "sampling_weight": 5.0,
+        "seed_prompt": "Design a pastebin-like text sharing service."
+      },
+      {
+        "name": "Notification Service",
+        "difficulty": "intermediate",
+        "frequency_score": 7,
+        "recency_multiplier": 1.0,
+        "sampling_weight": 7.0,
+        "seed_prompt": "Design a notification system that supports email, SMS, and push notifications."
+      },
+      {
+        "name": "Social Media Feed",
+        "difficulty": "intermediate",
+        "frequency_score": 8,
+        "recency_multiplier": 1.0,
+        "sampling_weight": 8.0,
+        "seed_prompt": "Design the backend for a social media feed like Twitter or Instagram."
+      },
+      {
+        "name": "Chat Application",
+        "difficulty": "intermediate",
+        "frequency_score": 8,
+        "recency_multiplier": 1.0,
+        "sampling_weight": 8.0,
+        "seed_prompt": "Design a real-time chat service like WhatsApp or Slack."
+      },
+      {
+        "name": "E-commerce Order System",
+        "difficulty": "intermediate",
+        "frequency_score": 7,
+        "recency_multiplier": 1.0,
+        "sampling_weight": 7.0,
+        "seed_prompt": "Design the backend for an e-commerce order and checkout system."
+      },
+      {
+        "name": "Job Scheduler",
+        "difficulty": "intermediate",
+        "frequency_score": 6,
+        "recency_multiplier": 1.0,
+        "sampling_weight": 6.0,
+        "seed_prompt": "Design a job scheduler that runs tasks at specific times or intervals."
+      },
+      {
+        "name": "File Sharing / Storage Service",
+        "difficulty": "intermediate",
+        "frequency_score": 6,
+        "recency_multiplier": 1.0,
+        "sampling_weight": 6.0,
+        "seed_prompt": "Design a file storage and sharing service like Google Drive or Dropbox."
+      },
+      {
+        "name": "Ride-Sharing Backend",
+        "difficulty": "hard",
+        "frequency_score": 7,
+        "recency_multiplier": 1.0,
+        "sampling_weight": 7.0,
+        "seed_prompt": "Design the backend for a ride-sharing service like Uber, including driver matching."
+      },
+      {
+        "name": "Video Streaming Platform",
+        "difficulty": "hard",
+        "frequency_score": 7,
+        "recency_multiplier": 1.0,
+        "sampling_weight": 7.0,
+        "seed_prompt": "Design a video streaming platform like YouTube."
+      },
+      {
+        "name": "Distributed Job Queue with Retries",
+        "difficulty": "hard",
+        "frequency_score": 6,
+        "recency_multiplier": 1.0,
+        "sampling_weight": 6.0,
+        "seed_prompt": "Design a distributed job queue that handles retries, priorities, and failure recovery across multiple worker nodes."
+      },
+      {
+        "name": "News Feed Ranking / Recommendation System",
+        "difficulty": "hard",
+        "frequency_score": 6,
+        "recency_multiplier": 1.2,
+        "sampling_weight": 7.2,
+        "seed_prompt": "Design a content recommendation system for a news feed, considering ranking and personalization."
+      },
+      {
+        "name": "Web Crawler",
+        "difficulty": "hard",
+        "frequency_score": 5,
+        "recency_multiplier": 1.0,
+        "sampling_weight": 5.0,
+        "seed_prompt": "Design a web crawler that can scale to billions of pages."
+      },
+      {
+    "topic": "SQL Injection Mechanics in DBAPI (%s placeholders vs f-strings)",
+    "difficulty": "intermediate",
+    "frequency_score": 9,
+    "recency_multiplier": 1.0,
+    "sampling_weight": 9.0,
+    "why_it_matters": "Tests real security application over textbook definition. Verifies that the candidate uses database parameter escaping properly rather than insecure string formatting."
+    },
+    {
+    "topic": "Psycopg2 (Client-Side) vs Psycopg 3 (Server-Side) Query Binding",
+    "difficulty": "hard",
+    "frequency_score": 6,
+    "recency_multiplier": 1.3,
+    "sampling_weight": 7.8,
+    "why_it_matters": "Highly relevant for modern Python backend engineering. Evaluates deep understanding of query planning, binary protocol optimization, and the evolution of modern drivers."
+    }
+    ]
+  }
+}

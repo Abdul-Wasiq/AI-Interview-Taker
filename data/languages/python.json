@@ -1,0 +1,167 @@
+{
+  "language": "python",
+  "phase": "fundamentals",
+  "description": "Topic-only bucket (no question text) so the interviewer can attack from any angle and drill deeper based on answer quality. sampling_weight = frequency_score x recency_multiplier; used for weighted random selection at runtime (never zero probability).",
+  "fundamentals": [
+    {
+      "topic": "Decorators",
+      "difficulty": "intermediate",
+      "frequency_score": 8,
+      "recency_multiplier": 1.0,
+      "sampling_weight": 8.0,
+      "why_it_matters": "Tests understanding of first-class functions and closures, not just 'put @ before a function'. Real depth: writing one with arguments, decorator chaining/order."
+    },
+    {
+      "topic": "Closures",
+      "difficulty": "intermediate",
+      "frequency_score": 6,
+      "recency_multiplier": 1.0,
+      "sampling_weight": 6.0,
+      "why_it_matters": "Underpins decorators and callback patterns. Good follow-up: late-binding closure bugs in loops."
+    },
+    {
+      "topic": "Generators vs Iterators (yield vs return)",
+      "difficulty": "intermediate",
+      "frequency_score": 8,
+      "recency_multiplier": 1.0,
+      "sampling_weight": 8.0,
+      "why_it_matters": "Tests memory-efficiency reasoning, not just syntax. Follow-up: when NOT to use a generator (e.g. need multiple passes)."
+    },
+    {
+      "topic": "GIL (Global Interpreter Lock)",
+      "difficulty": "hard",
+      "frequency_score": 8,
+      "recency_multiplier": 1.2,
+      "sampling_weight": 9.6,
+      "why_it_matters": "Separates people who've only used Python from people who understand its runtime. Follow-up: why GIL doesn't block multiprocessing. Recency boosted — free-threaded (no-GIL) Python builds are an active, current topic."
+    },
+    {
+      "topic": "Threading vs Multiprocessing vs AsyncIO — when to use which",
+      "difficulty": "hard",
+      "frequency_score": 9,
+      "recency_multiplier": 1.1,
+      "sampling_weight": 9.9,
+      "why_it_matters": "CPU-bound vs I/O-bound reasoning. Common real-world backend question, not academic trivia. Async is increasingly default in modern backend frameworks."
+    },
+    {
+      "topic": "Mutable default arguments",
+      "difficulty": "intermediate",
+      "frequency_score": 7,
+      "recency_multiplier": 1.0,
+      "sampling_weight": 7.0,
+      "why_it_matters": "Classic real bug (mutable default persists across calls). Tests if they've actually been bitten by it."
+    },
+    {
+      "topic": "is vs == (identity vs equality)",
+      "difficulty": "beginner",
+      "frequency_score": 6,
+      "recency_multiplier": 1.0,
+      "sampling_weight": 6.0,
+      "why_it_matters": "Quick filter question, but has a real follow-up about small-int/string interning caching behavior."
+    },
+    {
+      "topic": "Shallow copy vs deep copy",
+      "difficulty": "intermediate",
+      "frequency_score": 6,
+      "recency_multiplier": 1.0,
+      "sampling_weight": 6.0,
+      "why_it_matters": "Nested mutable objects are a real source of production bugs — good scenario-based follow-up potential."
+    },
+    {
+      "topic": "*args and **kwargs",
+      "difficulty": "beginner",
+      "frequency_score": 7,
+      "recency_multiplier": 1.0,
+      "sampling_weight": 7.0,
+      "why_it_matters": "Simple on the surface; follow-up into argument unpacking and API design (flexible function signatures) adds depth."
+    },
+    {
+      "topic": "Scoping — the LEGB rule",
+      "difficulty": "intermediate",
+      "frequency_score": 5,
+      "recency_multiplier": 1.0,
+      "sampling_weight": 5.0,
+      "why_it_matters": "Tests whether they understand variable resolution, not just 'global vs local'."
+    },
+    {
+      "topic": "Context managers and the with statement",
+      "difficulty": "intermediate",
+      "frequency_score": 7,
+      "recency_multiplier": 1.0,
+      "sampling_weight": 7.0,
+      "why_it_matters": "Follow-up: writing a custom context manager with __enter__/__exit__ or contextlib. Directly relevant to backend resource handling (DB connections, files)."
+    },
+    {
+      "topic": "Magic/dunder methods",
+      "difficulty": "hard",
+      "frequency_score": 6,
+      "recency_multiplier": 1.0,
+      "sampling_weight": 6.0,
+      "why_it_matters": "Follow-up: implementing __eq__, __hash__, __repr__ correctly together — a common real mistake."
+    },
+    {
+      "topic": "Duck typing",
+      "difficulty": "intermediate",
+      "frequency_score": 5,
+      "recency_multiplier": 1.0,
+      "sampling_weight": 5.0,
+      "why_it_matters": "Tests Python's dynamic-typing philosophy vs static-typed languages — good comparative discussion topic."
+    },
+    {
+      "topic": "Metaclasses",
+      "difficulty": "hard",
+      "frequency_score": 3,
+      "recency_multiplier": 1.0,
+      "sampling_weight": 3.0,
+      "why_it_matters": "Advanced filter question for senior candidates — most won't need it daily but understanding it signals depth."
+    },
+    {
+      "topic": "Memoization / functools.lru_cache",
+      "difficulty": "intermediate",
+      "frequency_score": 6,
+      "recency_multiplier": 1.0,
+      "sampling_weight": 6.0,
+      "why_it_matters": "Bridges into performance/optimization discussion and ties naturally into a live-coding follow-up."
+    },
+    {
+      "topic": "OOP — inheritance, polymorphism, encapsulation in practice",
+      "difficulty": "intermediate",
+      "frequency_score": 8,
+      "recency_multiplier": 1.0,
+      "sampling_weight": 8.0,
+      "why_it_matters": "Ask for real examples/tradeoffs, not definitions — this is where shallow-prep candidates get caught."
+    },
+    {
+      "topic": "Exception handling — try/except/else/finally and custom exceptions",
+      "difficulty": "beginner",
+      "frequency_score": 7,
+      "recency_multiplier": 1.0,
+      "sampling_weight": 7.0,
+      "why_it_matters": "Follow-up: exception hierarchy design for a real API (when to create custom exception classes)."
+    },
+    {
+      "topic": "Monkey patching",
+      "difficulty": "hard",
+      "frequency_score": 3,
+      "recency_multiplier": 0.9,
+      "sampling_weight": 2.7,
+      "why_it_matters": "Good discussion topic: when it's a legitimate testing tool (mocking) vs a dangerous production anti-pattern. Slightly less commonly asked directly compared to other hard topics here."
+    },
+    {
+    "topic": "FastAPI Event Loop Blocking with psycopg2",
+    "difficulty": "hard",
+    "frequency_score": 9,
+    "recency_multiplier": 1.2,
+    "sampling_weight": 10.8,
+    "why_it_matters": "Crucial for your target stack. Tests if you know that blocking sync code inside an async def endpoint halts the entire server process, and how thread pools fix it."
+    },
+    {
+    "topic": "Memory Overhead: fetchall() vs Server-side Named Cursors",
+    "difficulty": "intermediate",
+    "frequency_score": 7,
+    "recency_multiplier": 1.0,
+    "sampling_weight": 7.0,
+    "why_it_matters": "Tests production data scaling awareness. Explores how streaming huge query responses directly from PostgreSQL prevents Python memory crashes."
+    }
+  ]
+}
