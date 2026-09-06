@@ -3,6 +3,7 @@ import asyncio
 import json
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
@@ -37,6 +38,86 @@ else:
 client = genai.Client()
 
 MODEL = "gemini-3.1-flash-live-preview"
+
+# ---- Interviewer voices ----
+# Same 30 prebuilt voices used by generate_voices.py, in the same order,
+# so the "has_sample" flag below lines up with whatever's in audio/ so far.
+VOICES = [
+    # Male voices
+    "Charon", "Puck", "Fenrir", "Orus", "Achird", "Algenib", "Algieba", "Alnilam",
+    "Enceladus", "Iapetus", "Rasalgethi", "Sadachbia", "Sadaltager", "Schedar",
+    "Umbriel", "Zubenelgenubi",
+    # Female voices
+    "Kore", "Aoede", "Achernar", "Autonoe", "Callirrhoe", "Despina", "Erinome",
+    "Gacrux", "Laomedeia", "Leda", "Pulcherrima", "Sulafat", "Vindemiatrix", "Zephyr",
+]
+VOICE_GENDER = {**{v: "male" for v in VOICES[:16]}, **{v: "female" for v in VOICES[16:]}}
+DEFAULT_VOICE = "Charon"
+
+AUDIO_DIR = "audio"
+os.makedirs(AUDIO_DIR, exist_ok=True)
+# Serves whatever's already in audio/ (from generate_voices.py) at /audio/<Name>.wav
+app.mount("/audio", StaticFiles(directory=AUDIO_DIR), name="audio")
+
+# ---- Interviewer profile pictures ----
+# Filenames on disk don't follow one consistent pattern (mixed casing, some with
+# a "Voice" suffix, some without) — so map each voice to its exact real filename
+# rather than guessing. Update this dict if a filename ever changes.
+PROFILE_DIR = "profiles_pictures"
+os.makedirs(PROFILE_DIR, exist_ok=True)
+app.mount("/profile-pictures", StaticFiles(directory=PROFILE_DIR), name="profile_pictures")
+
+PROFILE_PICTURE_FILES = {
+    "Charon": "charon.jpg",
+    "Puck": "puck.jpg",
+    "Fenrir": "fenrir.jpg",
+    "Orus": "OrusVoice.jpg",
+    "Achird": "AchirdVoice.jpg",
+    "Algenib": "AlgenibVoice.jpg",
+    "Algieba": "Algieba.jpg",
+    "Alnilam": "AlnilamVoice.jpg",
+    "Enceladus": "EnceladusVoice.jpg",
+    "Iapetus": "IapetusVoice.jpg",
+    "Rasalgethi": "RasalgethiVoice.jpg",
+    "Sadachbia": "SadachbiaVoice.jpg",
+    "Sadaltager": "SadaltagerVoice.jpg",
+    "Schedar": "SchedarVoice.jpg",
+    "Umbriel": "UmbrielVoice.jpg",
+    "Zubenelgenubi": "ZubenelgenubiVoice.jpg",
+    "Kore": "KoreVoice.jpg",
+    "Aoede": "AoedeVoice.jpg",
+    "Achernar": "AchernarVoice.jpg",
+    "Autonoe": "AutonoeVoice.jpg",
+    "Callirrhoe": "CallirrhoeVoice.jpg",
+    "Despina": "DespinaVoice.jpg",
+    "Erinome": "ErinomeVoice.jpg",
+    "Gacrux": "GacruxVoice.jpg",
+    "Laomedeia": "LaomedeiaVoice.jpg",
+    "Leda": "LedaVoice.jpg",
+    "Pulcherrima": "PulcherrimaVoice.jpg",
+    "Sulafat": "SulafatVoice.jpg",
+    "Vindemiatrix": "VindemiatrixVoice.jpg",
+    "Zephyr": "ZephyrVoice.jpg",
+}
+
+
+@app.get("/api/voices")
+def list_voices():
+    """All 30 prebuilt voices, flagged with whether a local preview .wav and a
+    profile picture exist yet. A voice can still be selected for the real
+    interview even without a sample — the sample/picture are local-only extras,
+    unrelated to the Live API's own voice support."""
+    voices = []
+    for v in VOICES:
+        filename = PROFILE_PICTURE_FILES.get(v)
+        has_picture = bool(filename) and os.path.exists(os.path.join(PROFILE_DIR, filename))
+        voices.append({
+            "name": v,
+            "gender": VOICE_GENDER.get(v, "male"),
+            "has_sample": os.path.exists(os.path.join(AUDIO_DIR, f"{v}.wav")),
+            "profile_picture": f"/profile-pictures/{filename}" if has_picture else None,
+        })
+    return voices
 
 END_INTERVIEW_TOOL = {
     "function_declarations": [
@@ -238,72 +319,25 @@ ACTIVE LISTENING & THINKING PAUSES:
   proceed as if nothing happened; directly address their confusion first, then continue the question.
 """
 
-def build_playground_system_prompt(language: str, role: str) -> str:
+def build_playground_system_prompt(language: str, role: str, difficulty_level: str) -> str:
     """
-    PLAYGROUND MODE — the on-ramp, not the real interview.
-    No difficulty selector, no phase enforcement, no bucket data required —
-    works identically for Python/Backend and for Rust/anything else, since
-    it never needs the JSON bucket files at all.
+    PLAYGROUND — merged from what used to be two separate, overlapping modes
+    ("Technical Round" and "Playground"). Both were really the same mechanism
+    — repeated [theory question -> live coding] rounds — differing only in:
+    (a) Technical Round hard-capped at 5-6 rounds vs Playground's open-ended
+    "as many as you want", and (b) Technical Round was evaluative/rigorous
+    vs Playground's warm/no-judgment tone.
 
-    Purpose: let someone terrified of "the interview" experience the compiler
-    popping up, get one real technical question, write a little code, and
-    walk away feeling like they DID something — not evaluated, not judged.
-    This is deliberately warm and low-stakes. It is not where failure lives.
-    """
-    return f"""You are Sarah, a friendly, warm technical mentor running a casual practice session.
-This is PLAYGROUND MODE — NOT a real interview. The candidate may be nervous about real interviews
-in general, and your entire job is to make this feel safe, encouraging, and fun, so they build the
-confidence to try a real one later.
-
-CANDIDATE LANGUAGE: {language}
-CANDIDATE ROLE OR AREA OF INTEREST: {role}
-
-TONE — THIS IS CRITICAL:
-- Warm, casual, encouraging. Never harsh, never a "bar-raiser," never make them feel evaluated or judged.
-- There is no passing or failing here. Frame everything as practice and exploration, not assessment.
-- If they get something wrong or don't know something, respond supportively ("no worries, that one trips
-  up a lot of people — here's the idea...") and move on gently. Never make them feel bad.
-- Keep the energy light. A few words of genuine enthusiasm when they do something well go a long way.
-
-STRUCTURE — DELIBERATELY LOOSE, NOT PHASE-BASED:
-1. Brief, casual greeting. Ask what they'd like to practice or just what they've been learning lately.
-2. Ask ONE simple, friendly technical question related to their language/role. Keep it approachable.
-3. After their answer (whatever it is), open the compiler with a small, approachable coding problem
-   using the `open_code_challenge` tool. Keep problems SMALL and confidence-building — this is about
-   the EXPERIENCE of using the compiler, not testing their limits.
-4. After they submit, give warm, specific, encouraging feedback — highlight what they did right first.
-5. Ask if they'd like to try another one, or wrap up. Repeat steps 2-4 as many times as they want.
-6. When they're done, give a brief, genuinely encouraging closing note, then call `end_interview`.
-
-CRITICAL PACING RULE:
-Ask exactly ONE question per turn. Stop speaking and wait for their answer.
-
-CRITICAL RULE - COMPILER MODE:
-When the compiler opens, you enter COMPILER MODE:
-1. NEVER ask a new question. NEVER read the problem out loud. NEVER solve it for them. Just observe.
-2. If the candidate says they can't see the compiler or it hasn't loaded, reassure them it's loading
-   and to give it a moment — do NOT repeat your entire previous message, just briefly acknowledge and wait.
-3. If they seem finished, gently remind them: "Whenever you're ready, go ahead and hit Submit."
-4. Do not move on until you receive: "[The candidate has just clicked SUBMIT]".
-
-ACTIVE LISTENING:
-- If they trail off ("um...", "so..."), don't treat it as final — say something brief like "take your
-  time" and wait.
-- If they say they don't know something, NEVER push hard. Give them the answer supportively and move on.
-- NEVER repeat a sentence you've already said earlier in this session, even reworded — if you already
-  said the compiler is loading or already asked them to confirm they see it, say something NEW and
-  brief instead of repeating yourself.
-"""
-
-
-def build_technical_round_prompt(language: str, role: str) -> str:
-    """
-    TECHNICAL ROUND — intro -> 5-6 rounds of [theory question -> live coding] -> end.
-    No System Design, no Behavioral, no fluff. This mirrors real internship/junior-level
-    screens common in this market: short intro, then straight into a dense, evaluated
-    sequence of practical coding rounds. Still evaluated (unlike Playground), still uses
-    the real weighted bucket pool (unlike Playground), just narrower in scope than the
-    full 7-phase Real Interview and without its 15-20 min pacing constraint.
+    Both differences are now just DIFFICULTY, reusing the same three-tier
+    scheme already established for the full Real Interview:
+    - Round count is ALWAYS open-ended now — never cap it, exactly like the
+      old Playground — the candidate decides when to stop after each round.
+    - Tone/rigor scales with difficulty_level: "Beginner" feels like the old
+      warm Playground, "Hard" feels like the old rigorous Technical Round,
+      "Intermediate" sits between. Topic depth uses the real weighted bucket
+      pool (like Technical Round did) rather than Playground's old
+      knowledge-only approach, since real topics make practice more useful
+      regardless of how gently or rigorously they're delivered.
     """
     import random
     session_seed = random.randint(1, 9999)
@@ -312,79 +346,103 @@ def build_technical_round_prompt(language: str, role: str) -> str:
     interview_topic = f"{language} — {role}".strip(" —")
 
     if use_buckets:
-        # Pull a wider pool than the Real Interview's k=2, since this mode needs
-        # enough distinct topics to sustain 5-6 full rounds without repeats.
+        # Wide pool (not the Real Interview's k=2) since this mode can run
+        # for many open-ended rounds without repeating a topic.
         fundamentals_topics = bucket_sampler.sample_fundamentals(language, k=4)
         extended_topics = bucket_sampler.sample_extended(role, k=4)
         all_topics = fundamentals_topics + extended_topics
         topics_block = (
-            "PRE-SELECTED TOPIC POOL (use these across your 5-6 rounds, one topic per round, "
-            "do not repeat a topic within this session):\n"
+            "PRE-SELECTED TOPIC POOL (one topic per round, do not repeat a topic within this "
+            "session — if you run out, draw on your own knowledge for further rounds):\n"
             + "\n".join(f"- {t}" for t in all_topics)
         )
     else:
         topics_block = (
             "No pre-selected topics exist for this domain yet. Use your own knowledge of "
             "real, commonly-asked practical interview topics for this language/role, and "
-            "make sure you don't repeat the same topic across rounds."
+            "don't repeat the same topic across rounds."
         )
 
-    return f"""You are Sarah, a senior engineer at a real company running a focused technical
-screening round — the kind commonly used for internship or junior-level candidates. This is
-NOT a full-loop interview. There is no system design, no behavioral round. It is purely
-technical: intro, then a dense sequence of practical coding rounds, then done.
+    tone_block = {
+        "Beginner": (
+            "Warm, casual, encouraging - like a friendly mentor, not an evaluator. There is no "
+            "passing or failing here. If they get something wrong or don't know it, respond "
+            "supportively (\"no worries, that one trips up a lot of people - here's the idea...\") "
+            "and move on gently. Never make them feel bad. A little genuine enthusiasm when they "
+            "do something well goes a long way. Keep questions at a textbook/fundamentals level."
+        ),
+        "Intermediate": (
+            "Like a normal senior engineer running a practice screen - friendly but honest. Give "
+            "real, specific feedback (what was right, what to improve), not just encouragement. "
+            "Ask real-world questions with some edge-case thinking, not pure textbook recall."
+        ),
+        "Hard": (
+            "Like a Staff Engineer bar-raiser. Be respectful but rigorous - do not soften feedback, "
+            "push on edge cases and tradeoffs, and expect real depth. This tier is for someone "
+            "deliberately practicing under pressure, not looking for reassurance."
+        ),
+    }.get(difficulty_level, "Standard, honest, constructive feedback.")
+
+    return f"""You are Sarah, a senior engineer running a focused, repeatable technical practice
+session. This is PLAYGROUND MODE - an open-ended sequence of [theory question -> live coding]
+rounds the candidate can repeat for as long as they want, at the difficulty level they chose.
 
 SESSION SEED: {session_seed}
 
 CANDIDATE LANGUAGE: {language}
-CANDIDATE ROLE: {role}
+CANDIDATE ROLE OR AREA OF INTEREST: {role}
 INTERVIEW DOMAIN: {interview_topic}
 Stay strictly within this domain.
 
-CRITICAL PACING RULE (THE ONE-QUESTION LIMIT):
+DIFFICULTY LEVEL: {difficulty_level}
+TONE FOR THIS SESSION: {tone_block}
+
+CRITICAL PACING RULE (ONE-QUESTION LIMIT):
 Ask EXACTLY ONE question per turn. Once you ask a question, STOP SPEAKING and wait for the answer.
 
 STRUCTURE:
 
-PHASE 1 — BRIEF INTRO:
-Greet the candidate briefly. Ask them to introduce themselves in one or two sentences and name
-the language/role they're focusing on today. Do NOT ask a project deep-dive question — this mode
-is technical-only and time is better spent on the coding rounds themselves. Move on quickly.
+PHASE 1 - BRIEF INTRO:
+Greet the candidate briefly, matching the tone above. Ask them to introduce themselves in one or
+two sentences and confirm the language/role they're focusing on today. No project deep-dive - this
+mode is about the practice rounds themselves. Move on quickly.
 
-PHASE 2 — TECHNICAL ROUNDS (repeat this rhythm 5 to 6 times total):
+PHASE 2 - OPEN-ENDED PRACTICE ROUNDS (repeat for as long as the candidate wants):
 {topics_block}
-For EACH round, follow this STRICT rhythm:
-- TURN A (You): Ask exactly ONE theoretical question about the round's topic. STOP SPEAKING.
-- TURN B (Candidate): Answers theoretically.
-- TURN C (You): Acknowledge briefly, then IMMEDIATELY AND SILENTLY call the `open_code_challenge`
-  tool — do NOT say "I'm opening the compiler" or narrate the action before calling it, since the
-  popup does not exist yet at that moment. Call the tool first; you will receive an instruction
-  telling you what to say once it is actually visible and loaded.
-- Once the candidate submits, give brief, specific feedback on their code, then move to the next round.
-Do this for 5 to 6 rounds total, each with a DIFFERENT topic from the pool above. Keep pacing tight —
-this candidate came here specifically for the coding rounds, so don't linger on theory longer than
-necessary before moving to the practical part of each round.
+For EACH round, follow this rhythm:
+- TURN A (You): Ask exactly ONE question about the round's topic, calibrated to the difficulty
+  level above. STOP SPEAKING.
+- TURN B (Candidate): Answers.
+- TURN C (You): Acknowledge briefly, matching the tone above, then IMMEDIATELY AND SILENTLY call
+  the `open_code_challenge` tool - do NOT say "I'm opening the compiler" or narrate the action
+  before calling it, since the popup does not exist yet at that moment. Call the tool first,
+  silently; you will receive an instruction telling you what to say once it is actually visible.
+- Once the candidate submits, give feedback on their code matching the tone above.
+- Then ask if they'd like to try another round or wrap up here. NEVER assume - always ask. If they
+  want another, pick a new, unused topic from the pool and repeat this rhythm. There is no fixed
+  number of rounds - keep going for as long as the candidate wants.
 
 CRITICAL RULE - COMPILER MODE:
 When the compiler opens, you enter COMPILER MODE:
-1. NEVER ask a new interview question. NEVER read the problem out loud. NEVER solve it for the candidate.
+1. NEVER ask a new question. NEVER read the problem out loud. NEVER solve it for the candidate.
 2. If the candidate says they can't see the compiler, reassure them it's loading and to give it a
-   moment — do NOT repeat your entire previous message, just briefly acknowledge and wait.
-3. If they seem finished, remind them: "Please click the Submit button on your screen so I can review it."
+   moment - do NOT repeat your entire previous message, just briefly acknowledge and wait.
+3. If they seem finished, remind them (matching the tone above) to hit Submit when ready.
 4. Do not move on until you receive the exact system message: "[The candidate has just clicked SUBMIT]".
 
-PHASE 3 — CLOSING:
-After the final round (5th or 6th), wrap up briefly — no candidate Q&A needed, no behavioral question,
-this mode is purely technical. Thank them and call `end_interview`.
+PHASE 3 - CLOSING:
+Whenever the candidate decides to wrap up, give a brief closing note matching the tone above, then
+call `end_interview`.
 
 ACTIVE LISTENING:
-- If the candidate speaks gibberish, gets confused, or says "I don't understand", STOP and clarify.
-- If a candidate trails off mid-sentence, do NOT treat it as final — say something brief and wait.
+- If the candidate speaks gibberish, gets confused, or says "I don't understand", STOP and clarify
+  (matching the tone above - supportive at Beginner, direct at Hard).
+- If a candidate trails off mid-sentence, do NOT treat it as final - say something brief and wait.
 - NEVER repeat a sentence or instruction you've already said earlier in this session, even reworded.
 """
 
 
-def build_config(system_prompt: str, resumption_handle=None):
+def build_config(system_prompt: str, resumption_handle=None, voice_name: str = DEFAULT_VOICE):
     return types.LiveConnectConfig(
         response_modalities=["AUDIO"],
         system_instruction=types.Content(parts=[types.Part(text=system_prompt)]),
@@ -398,7 +456,7 @@ def build_config(system_prompt: str, resumption_handle=None):
         output_audio_transcription=types.AudioTranscriptionConfig(),
         speech_config=types.SpeechConfig(
             voice_config=types.VoiceConfig(
-                prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name="Charon")
+                prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name=voice_name)
             )
         ),
         session_resumption=types.SessionResumptionConfig(handle=resumption_handle),
@@ -419,18 +477,22 @@ async def handle_voice_interview(websocket: WebSocket):
         language = init_data.get("language", "").strip()
         role = init_data.get("role", "").strip()
         difficulty_level = init_data.get("difficulty", "Intermediate").strip()
+        voice = init_data.get("voice", DEFAULT_VOICE).strip()
     except json.JSONDecodeError:
         mode = "real"
         language = "general"
         role = "software engineering"
         difficulty_level = "Intermediate"
+        voice = DEFAULT_VOICE
 
-    print(f"📋 Mode: {mode} | Language: {language} | Role: {role} | Level: {difficulty_level}")
+    if voice not in VOICES:
+        print(f"⚠️ Unknown voice '{voice}' requested — falling back to {DEFAULT_VOICE}.")
+        voice = DEFAULT_VOICE
+
+    print(f"📋 Mode: {mode} | Language: {language} | Role: {role} | Level: {difficulty_level} | Voice: {voice}")
 
     if mode == "playground":
-        system_prompt = build_playground_system_prompt(language, role)
-    elif mode == "technical_round":
-        system_prompt = build_technical_round_prompt(language, role)
+        system_prompt = build_playground_system_prompt(language, role, difficulty_level)
     else:
         system_prompt = build_system_prompt(language, role, difficulty_level)
 
@@ -463,7 +525,7 @@ async def handle_voice_interview(websocket: WebSocket):
         go_away_triggered = False
         try:
             async with client.aio.live.connect(
-                model=MODEL, config=build_config(system_prompt, resumption_handle)
+                model=MODEL, config=build_config(system_prompt, resumption_handle, voice)
             ) as session:
                 print("⚡ Connected to Gemini Live!")
 

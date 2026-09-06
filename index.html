@@ -121,19 +121,383 @@
         }
         #submit-btn:hover { background: #15803d; }
         #submit-btn:disabled { background: #4b5563; cursor: not-allowed; }
+
+        /* ================= Settings: gear button ================= */
+        #settings-gear {
+            position: fixed;
+            top: 22px;
+            right: 24px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #1e1e1e;
+            border: 1px solid #333;
+            color: #a1a1aa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            padding: 0;
+            transition: 0.15s;
+        }
+        #settings-gear:hover { background: #2a2a2a; color: #fff; }
+        #settings-gear:disabled { opacity: 0.4; cursor: not-allowed; }
+        #settings-gear svg { width: 20px; height: 20px; }
+
+        /* Voice selection summary line under the subtitle */
+        #voice-summary {
+            text-align: center;
+            font-size: 13px;
+            color: #a1a1aa;
+            margin-top: -8px;
+            margin-bottom: 18px;
+        }
+        #voice-summary b { color: #e4e4e7; }
+        #voice-summary button {
+            background: none;
+            border: none;
+            color: #60a5fa;
+            font-size: 13px;
+            font-weight: normal;
+            padding: 0;
+            margin-left: 6px;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+        #voice-summary button:hover { color: #93c5fd; background: none; }
+        #voice-summary button:disabled { color: #52525b; cursor: not-allowed; text-decoration: none; }
+
+        /* ================= Settings modal ================= */
+        #settings-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.75);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+            text-align: left;
+        }
+        #settings-overlay.visible { display: flex; }
+
+        #settings-modal {
+            width: 94vw;
+            max-width: 1080px;
+            height: 86vh;
+            max-height: 800px;
+            background: #1e1e1e;
+            border-radius: 12px;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+            display: flex;
+            overflow: hidden;
+        }
+
+        #settings-sidebar {
+            width: 220px;
+            flex-shrink: 0;
+            background: #191919;
+            border-right: 1px solid #2a2a2a;
+            padding: 20px 12px;
+        }
+        #settings-sidebar-label {
+            font-size: 12px;
+            color: #71717a;
+            padding: 0 10px;
+            margin-bottom: 10px;
+        }
+        .settings-tab {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            background: none;
+            border: none;
+            color: #d4d4d8;
+            font-size: 14px;
+            font-weight: normal;
+            text-align: left;
+            padding: 9px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .settings-tab:hover { background: #242424; }
+        .settings-tab.active { background: #2a2a2a; color: #fff; font-weight: 600; }
+
+        #settings-main {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        #settings-main-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            padding: 22px 26px 14px;
+            border-bottom: 1px solid #2a2a2a;
+            flex-shrink: 0;
+        }
+        #settings-main-header h3 { margin: 0 0 4px 0; font-size: 17px; }
+        #settings-main-header p { margin: 0; font-size: 13px; color: #a1a1aa; }
+        #settings-close {
+            background: none;
+            border: none;
+            color: #a1a1aa;
+            font-size: 20px;
+            line-height: 1;
+            padding: 4px;
+            cursor: pointer;
+        }
+        #settings-close:hover { color: #fff; background: none; }
+
+        #voices-scroll { flex: 1; overflow-y: auto; padding: 18px 26px 26px; }
+        .voice-group-label {
+            font-size: 12px;
+            color: #71717a;
+            margin: 18px 0 8px;
+        }
+        .voice-group-label:first-child { margin-top: 0; }
+
+        .voices-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+            gap: 16px;
+        }
+        .voice-card {
+            background: #242424;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            text-align: center;
+        }
+        .voice-card.selected { border-color: #3b82f6; background: #1e2a3f; }
+
+        .voice-avatar {
+            width: 128px;
+            height: 128px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 40px;
+            color: #fff;
+            position: relative;
+        }
+        .voice-card.selected .voice-avatar::after {
+            content: "✓";
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            width: 30px;
+            height: 30px;
+            background: #3b82f6;
+            border: 3px solid #242424;
+            border-radius: 50%;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .voice-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+            display: block;
+        }
+
+        .voice-name { font-size: 15px; font-weight: 600; }
+        .voice-card-actions { display: flex; gap: 6px; width: 100%; }
+
+        .voice-listen-btn, .voice-select-btn {
+            flex: 1;
+            padding: 8px 0;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 6px;
+            border: 1px solid #3a3a3a;
+            background: #1e1e1e;
+            color: #d4d4d8;
+            cursor: pointer;
+        }
+        .voice-listen-btn:hover { background: #2a2a2a; }
+        .voice-listen-btn:disabled {
+            color: #52525b;
+            cursor: not-allowed;
+            background: #1a1a1a;
+        }
+        .voice-select-btn { background: #3b82f6; border-color: #3b82f6; color: #fff; }
+        .voice-select-btn:hover { background: #2563eb; }
+        .voice-card.selected .voice-select-btn {
+            background: #1e1e1e;
+            border-color: #3a3a3a;
+            color: #a1a1aa;
+            cursor: default;
+        }
+        .voice-card.selected .voice-select-btn:hover { background: #1e1e1e; }
+
+        /* ================= Call screen (Google Meet-style) ================= */
+        #call-screen {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: #000;
+            z-index: 500;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        #call-screen.visible { display: flex; }
+
+        #call-topbar {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 28px;
+        }
+        #call-timer-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #e8eaed;
+            font-size: 15px;
+        }
+        #call-timer { font-variant-numeric: tabular-nums; }
+        .call-topbar-divider { color: #5f6368; }
+        #call-session-label { color: #bdc1c6; font-size: 14px; }
+        #call-info-icon {
+            display: inline-flex;
+            color: #9aa0a6;
+            cursor: default;
+        }
+        #call-info-icon svg { width: 17px; height: 17px; }
+        #call-participant-badge {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #3c4043;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: default;
+        }
+
+        #call-status-text {
+            position: absolute;
+            top: 66px;
+            left: 50%;
+            transform: translateX(-50%);
+            margin: 0;
+            color: #a1a1aa;
+            font-size: 14px;
+            font-style: italic;
+        }
+
+        #call-tile {
+            position: relative;
+            width: min(78vw, 900px);
+            height: min(44vw, 500px);
+            min-height: 220px;
+            background: #202124;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            transition: box-shadow 0.25s ease;
+        }
+        #call-tile.speaking {
+            box-shadow: 0 0 0 4px #3b82f6, 0 0 34px 8px rgba(59, 130, 246, 0.45);
+        }
+
+        .call-avatar-size {
+            width: clamp(90px, 14vw, 150px);
+            height: clamp(90px, 14vw, 150px);
+            font-size: clamp(30px, 4vw, 48px);
+        }
+
+        #call-name-label {
+            position: absolute;
+            left: 20px;
+            bottom: 16px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+        }
+
+        #call-controls {
+            position: fixed;
+            bottom: 32px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            background: #202124;
+            padding: 12px 20px;
+            border-radius: 40px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.6);
+        }
+        .call-control-btn {
+            width: 54px;
+            height: 54px;
+            border-radius: 50%;
+            background: #3c4043;
+            border: none;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            padding: 0;
+            transition: background 0.15s;
+        }
+        .call-control-btn:hover { background: #4a4d51; }
+        .call-control-btn svg { width: 22px; height: 22px; }
+
+        #mic-toggle-btn .mic-off-icon { display: none; }
+        #mic-toggle-btn.muted { background: #fff; color: #202124; }
+        #mic-toggle-btn.muted:hover { background: #e8e8e8; }
+        #mic-toggle-btn.muted .mic-on-icon { display: none; }
+        #mic-toggle-btn.muted .mic-off-icon { display: inline-block; }
+
+        #end-call-btn {
+            width: 72px;
+            border-radius: 34px;
+            background: #ea4335;
+        }
+        #end-call-btn:hover { background: #d33426; }
     </style>
 </head>
 <body>
+    <button id="settings-gear" onclick="openSettings()" title="Settings" aria-label="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+    </button>
+
     <div class="container">
         <h2 id="page-title">🎙️ AI Technical Interview Room</h2>
         <p id="page-subtitle">Ensure your microphone is connected and your laptop volume is turned up.</p>
+        <p id="voice-summary">Interviewer voice: <b id="voice-summary-name">Charon</b><button id="voice-summary-change" onclick="openSettings()">Change</button></p>
 
-        <!-- Mode Selector: Real Interview (ground reality) vs Technical Round (dense coding-only)
-             vs Playground (low-stakes practice) -->
+        <!-- Mode Selector: Real Interview (full mock interview) vs Playground (open-ended
+             practice rounds, difficulty-calibrated tone and complexity) -->
         <select id="mode-input" onchange="toggleMode()">
             <option value="real">🎯 Real Interview — full mock interview</option>
-            <option value="technical_round">💻 Technical Round — intro + 5-6 coding rounds</option>
-            <option value="playground">🧪 Playground — casual practice, no pressure</option>
+            <option value="playground">🧪 Playground — practice rounds, again and again</option>
         </select>
 
         <!-- Language Selector: real programming languages ONLY, no frameworks -->
@@ -161,7 +525,9 @@
         </select>
         <input type="text" id="role-other-input" placeholder="Type your role (e.g. Embedded Systems, ML Engineer)" style="display: none;" />
 
-        <!-- Difficulty Selector — REAL INTERVIEW MODE ONLY. Playground has no difficulty at all. -->
+        <!-- Difficulty Selector — used by BOTH Real Interview and Playground now. In
+             Playground, difficulty also drives tone (Beginner = warm/no-pressure,
+             Hard = rigorous bar-raiser), not just question complexity. -->
         <select id="difficulty-input">
             <option value="Beginner">Level: Beginner (Fundamentals & Syntax)</option>
             <option value="Intermediate" selected>Level: Intermediate (Real-World & Edge Cases)</option>
@@ -171,6 +537,55 @@
         <br>
         <button id="start-btn" onclick="startVoiceStream()">Start Interview</button>
         <p id="status">Ready to connect...</p>
+    </div>
+
+    <!-- ================= Call screen (Google Meet-style) ================= -->
+    <div id="call-screen">
+        <div id="call-topbar">
+            <div id="call-timer-group">
+                <span id="call-timer">00:00</span>
+                <span class="call-topbar-divider">|</span>
+                <span id="call-session-label">AI Interview</span>
+                <span id="call-info-icon" title="Session details">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                </span>
+            </div>
+            <div id="call-participant-badge" title="You & the interviewer">2</div>
+        </div>
+
+        <p id="call-status-text">Connecting...</p>
+
+        <div id="call-tile">
+            <div id="call-name-label">Charon</div>
+        </div>
+        <div id="call-controls">
+            <button id="mic-toggle-btn" class="call-control-btn" onclick="toggleMic()" title="Mute microphone" aria-label="Mute microphone">
+                <svg class="mic-on-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                    <line x1="12" y1="19" x2="12" y2="23"></line>
+                    <line x1="8" y1="23" x2="16" y2="23"></line>
+                </svg>
+                <svg class="mic-off-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                    <path d="M9 9v3a3 3 0 0 0 5.12 2.12"></path>
+                    <path d="M15 9.34V4a3 3 0 0 0-5.94-.6"></path>
+                    <path d="M17 16.95A7 7 0 0 1 5 12v-2"></path>
+                    <path d="M19 10v2a7 7 0 0 1-.11 1.23"></path>
+                    <line x1="12" y1="19" x2="12" y2="23"></line>
+                    <line x1="8" y1="23" x2="16" y2="23"></line>
+                </svg>
+            </button>
+            <button id="end-call-btn" class="call-control-btn" onclick="endInterview()" title="Leave interview" aria-label="Leave interview">
+                <svg viewBox="0 0 24 24" fill="currentColor" style="transform: rotate(135deg);">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                </svg>
+            </button>
+        </div>
     </div>
 
 
@@ -195,6 +610,30 @@
         </div>
     </div>
 
+    <!-- ================= Settings modal ================= -->
+    <div id="settings-overlay">
+        <div id="settings-modal">
+            <div id="settings-sidebar">
+                <div id="settings-sidebar-label">Settings</div>
+                <button class="settings-tab active" data-tab="voices" onclick="switchSettingsTab('voices')">🔊 Voices</button>
+            </div>
+            <div id="settings-main">
+                <div id="settings-main-header">
+                    <div>
+                        <h3>Interviewer Voice</h3>
+                        <p>Pick who conducts your interview. Tap a card to preview, then Select to use it.</p>
+                    </div>
+                    <button id="settings-close" onclick="closeSettings()">✕</button>
+                </div>
+                <div id="voices-scroll">
+                    <div id="voices-loading" style="color:#a1a1aa; font-size:14px;">Loading voices...</div>
+                    <div id="voices-content" style="display:none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <audio id="voice-preview-audio"></audio>
+
     <!-- Monaco Editor loader -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
 
@@ -205,6 +644,300 @@
     let nextStartTime = 0;
     let micStream;   
     let micProcessor;
+    let micMuted = false;
+    let speakingTimeout = null;
+
+    // ================= Voice picker =================
+    // index.html is opened directly as a local file (file://), same reason the
+    // websocket URL below is absolute — a relative fetch("/api/voices") would
+    // try file:///api/voices and silently fail. Change this if you ever serve
+    // the page from the FastAPI app itself instead of opening it directly.
+    const API_BASE = "http://localhost:8000";
+
+    let allVoices = [];   // [{name, gender, has_sample, profile_picture}] from /api/voices
+    let selectedVoice = localStorage.getItem("aiInterviewer.selectedVoice") || "Charon";
+    let currentlyPlayingVoice = null;
+    const previewAudio = document.getElementById("voice-preview-audio");
+
+    // Deterministic hue per voice name, so avatars (and now the call tile's
+    // background gradient) look distinct per interviewer but stay stable across reloads.
+    function hueFor(name) {
+        let hash = 0;
+        for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+        return Math.abs(hash) % 360;
+    }
+    function avatarColor(name) {
+        return `hsl(${hueFor(name)}, 50%, 40%)`;
+    }
+    function tileGradientFor(name) {
+        const hue = hueFor(name);
+        return `radial-gradient(circle at 50% 38%, hsl(${hue}, 38%, 20%) 0%, hsl(${hue}, 45%, 8%) 75%)`;
+    }
+
+    // ================= Call duration timer =================
+    let callStartTime = null;
+    let callTimerInterval = null;
+
+    function formatDuration(totalSeconds) {
+        const h = Math.floor(totalSeconds / 3600);
+        const m = Math.floor((totalSeconds % 3600) / 60);
+        const s = totalSeconds % 60;
+        const pad = n => String(n).padStart(2, "0");
+        return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+    }
+
+    function updateCallTimer() {
+        if (!callStartTime) return;
+        const el = document.getElementById("call-timer");
+        if (el) el.textContent = formatDuration(Math.floor((Date.now() - callStartTime) / 1000));
+    }
+
+    function startCallTimer() {
+        callStartTime = Date.now();
+        updateCallTimer();
+        callTimerInterval = setInterval(updateCallTimer, 1000);
+    }
+
+    function stopCallTimer() {
+        clearInterval(callTimerInterval);
+        callTimerInterval = null;
+        callStartTime = null;
+    }
+
+    // ================= Call screen (Google Meet-style) =================
+    function enterCallScreen(sessionInfo) {
+        const voiceObj = allVoices.find(v => v.name === selectedVoice) || { name: selectedVoice, profile_picture: null };
+
+        const tile = document.getElementById("call-tile");
+        const existingAvatar = tile.querySelector(".voice-avatar");
+        if (existingAvatar) existingAvatar.remove();
+        tile.prepend(createAvatarElement(voiceObj, "call-avatar-size"));
+        tile.style.background = tileGradientFor(voiceObj.name);
+
+        document.getElementById("call-name-label").textContent = voiceObj.name;
+
+        const info = sessionInfo || {};
+        const label = [info.language, info.role].filter(Boolean).join(" · ");
+        document.getElementById("call-session-label").textContent = label || "AI Interview";
+        document.getElementById("call-info-icon").title =
+            `Mode: ${info.mode || "-"} · Language: ${info.language || "-"} · Role: ${info.role || "-"} · Level: ${info.difficulty || "-"}`;
+        document.getElementById("call-participant-badge").title = `You & ${voiceObj.name}`;
+
+        const micBtn = document.getElementById("mic-toggle-btn");
+        micBtn.classList.remove("muted");
+        micBtn.title = "Mute microphone";
+        micBtn.setAttribute("aria-label", "Mute microphone");
+
+        document.querySelector(".container").style.display = "none";
+        document.getElementById("settings-gear").style.display = "none";
+        document.getElementById("call-screen").classList.add("visible");
+
+        startCallTimer();
+    }
+
+    function exitCallScreen() {
+        document.getElementById("call-screen").classList.remove("visible");
+        document.getElementById("call-tile").classList.remove("speaking");
+        document.querySelector(".container").style.display = "block";
+        document.getElementById("settings-gear").style.display = "flex";
+        clearTimeout(speakingTimeout);
+        stopCallTimer();
+    }
+
+    function toggleMic() {
+        micMuted = !micMuted;
+        const btn = document.getElementById("mic-toggle-btn");
+        btn.classList.toggle("muted", micMuted);
+        const label = micMuted ? "Unmute microphone" : "Mute microphone";
+        btn.title = label;
+        btn.setAttribute("aria-label", label);
+    }
+
+    function endInterview() {
+        shutdownEverything("You left the interview.");
+    }
+
+    // Adds a brief glow to the call tile while audio is streaming in, and removes
+    // it a moment after the last chunk — a simple stand-in for a real "is speaking"
+    // signal since the audio arrives as a stream of short buffered chunks.
+    function markSpeaking() {
+        const tile = document.getElementById("call-tile");
+        if (!tile) return;
+        tile.classList.add("speaking");
+        clearTimeout(speakingTimeout);
+        speakingTimeout = setTimeout(() => tile.classList.remove("speaking"), 500);
+    }
+
+    function updateVoiceSummary() {
+        document.getElementById("voice-summary-name").textContent = selectedVoice;
+    }
+
+    // Mirrors a status message to whichever status element is currently visible —
+    // the setup form's #status, and the call screen's #call-status-text.
+    function setStatus(text) {
+        const setupStatus = document.getElementById("status");
+        const callStatus = document.getElementById("call-status-text");
+        if (setupStatus) setupStatus.innerText = text;
+        if (callStatus) callStatus.innerText = text;
+    }
+
+    async function fetchVoices() {
+        try {
+            const res = await fetch(`${API_BASE}/api/voices`);
+            if (!res.ok) throw new Error(`Server responded ${res.status}`);
+            allVoices = await res.json();
+        } catch (err) {
+            console.error("Could not load voice list (is uvicorn running on :8000?):", err);
+            allVoices = [];
+        }
+    }
+
+    // Builds a circular avatar element (real photo if available, else a colored
+    // letter). Shared by the voice picker grid and the call screen tile.
+    function createAvatarElement(voice, extraClass) {
+        const avatar = document.createElement("div");
+        avatar.className = "voice-avatar" + (extraClass ? " " + extraClass : "");
+
+        function useLetterAvatar() {
+            avatar.innerHTML = "";
+            avatar.style.background = avatarColor(voice.name);
+            avatar.textContent = voice.name.charAt(0);
+        }
+
+        if (voice.profile_picture) {
+            const img = document.createElement("img");
+            img.src = `${API_BASE}${voice.profile_picture}`;
+            img.alt = voice.name;
+            img.onerror = useLetterAvatar;  // e.g. file removed/renamed after the list was loaded
+            avatar.appendChild(img);
+        } else {
+            useLetterAvatar();
+        }
+        return avatar;
+    }
+
+    function buildVoiceCard(voice) {
+        const card = document.createElement("div");
+        card.className = "voice-card" + (voice.name === selectedVoice ? " selected" : "");
+        card.dataset.voiceName = voice.name;
+
+        const avatar = createAvatarElement(voice);
+
+        const name = document.createElement("div");
+        name.className = "voice-name";
+        name.textContent = voice.name;
+
+        const actions = document.createElement("div");
+        actions.className = "voice-card-actions";
+
+        const listenBtn = document.createElement("button");
+        listenBtn.className = "voice-listen-btn";
+        listenBtn.textContent = "▶ Listen";
+        if (!voice.has_sample) {
+            listenBtn.disabled = true;
+            listenBtn.textContent = "No sample yet";
+        } else {
+            listenBtn.onclick = () => togglePreview(voice.name, listenBtn);
+        }
+
+        const selectBtn = document.createElement("button");
+        selectBtn.className = "voice-select-btn";
+        selectBtn.textContent = voice.name === selectedVoice ? "Selected" : "Select";
+        if (voice.name !== selectedVoice) {
+            selectBtn.onclick = () => selectVoice(voice.name);
+        }
+
+        actions.appendChild(listenBtn);
+        actions.appendChild(selectBtn);
+        card.appendChild(avatar);
+        card.appendChild(name);
+        card.appendChild(actions);
+        return card;
+    }
+
+    function renderVoiceGrid() {
+        const loading = document.getElementById("voices-loading");
+        const content = document.getElementById("voices-content");
+
+        if (!allVoices.length) {
+            loading.textContent = "Could not load voices. Is the server running?";
+            return;
+        }
+        loading.style.display = "none";
+        content.style.display = "block";
+        content.innerHTML = "";
+
+        const groups = [
+            { label: "Male voices", items: allVoices.filter(v => v.gender === "male") },
+            { label: "Female voices", items: allVoices.filter(v => v.gender === "female") },
+        ];
+
+        for (const group of groups) {
+            if (!group.items.length) continue;
+            const label = document.createElement("div");
+            label.className = "voice-group-label";
+            label.textContent = group.label;
+            content.appendChild(label);
+
+            const grid = document.createElement("div");
+            grid.className = "voices-grid";
+            group.items.forEach(v => grid.appendChild(buildVoiceCard(v)));
+            content.appendChild(grid);
+        }
+    }
+
+    function togglePreview(voiceName, buttonEl) {
+        if (currentlyPlayingVoice === voiceName) {
+            previewAudio.pause();
+            return;
+        }
+        previewAudio.src = `${API_BASE}/audio/${voiceName}.wav`;
+        previewAudio.play().catch(err => console.error("Preview playback failed:", err));
+        currentlyPlayingVoice = voiceName;
+        refreshListenButtons();
+    }
+
+    function refreshListenButtons() {
+        document.querySelectorAll(".voice-card").forEach(card => {
+            const btn = card.querySelector(".voice-listen-btn");
+            if (!btn || btn.disabled) return;
+            btn.textContent = (card.dataset.voiceName === currentlyPlayingVoice) ? "⏸ Playing" : "▶ Listen";
+        });
+    }
+
+    previewAudio.addEventListener("ended", () => { currentlyPlayingVoice = null; refreshListenButtons(); });
+    previewAudio.addEventListener("pause", () => { currentlyPlayingVoice = null; refreshListenButtons(); });
+    previewAudio.addEventListener("error", () => { currentlyPlayingVoice = null; refreshListenButtons(); });
+
+    function selectVoice(voiceName) {
+        selectedVoice = voiceName;
+        localStorage.setItem("aiInterviewer.selectedVoice", voiceName);
+        updateVoiceSummary();
+        renderVoiceGrid();
+    }
+
+    function switchSettingsTab(tab) {
+        document.querySelectorAll(".settings-tab").forEach(el => el.classList.remove("active"));
+        document.querySelector(`.settings-tab[data-tab="${tab}"]`).classList.add("active");
+        // Only one tab (Voices) exists today — this is here so adding more tabs later is a
+        // matter of adding a button + a panel, not restructuring this function.
+    }
+
+    async function openSettings() {
+        document.getElementById("settings-overlay").classList.add("visible");
+        if (!allVoices.length) {
+            await fetchVoices();
+        }
+        renderVoiceGrid();
+    }
+
+    function closeSettings() {
+        document.getElementById("settings-overlay").classList.remove("visible");
+        previewAudio.pause();
+    }
+
+    updateVoiceSummary();
+    fetchVoices();  // warm the cache quietly; openSettings() re-checks if this hasn't landed yet
 
     function shutdownEverything(message) {
         if (micStream) {
@@ -222,7 +955,9 @@
         if (ws && ws.readyState === WebSocket.OPEN) {
             ws.close();
         }
-        document.getElementById("status").innerText = message || "Interview ended.";
+        micMuted = false;
+        exitCallScreen();
+        setStatus(message || "Interview ended.");
         document.getElementById("start-btn").disabled = false;
         document.getElementById("start-btn").innerText = "Start New Interview";
         document.getElementById("mode-input").disabled = false;
@@ -231,6 +966,8 @@
         document.getElementById("role-input").disabled = false;
         document.getElementById("role-other-input").disabled = false;
         document.getElementById("difficulty-input").disabled = false;
+        document.getElementById("settings-gear").disabled = false;
+        document.getElementById("voice-summary-change").disabled = false;
     }
 
     function toggleMode() {
@@ -241,15 +978,10 @@
         const startBtn = document.getElementById("start-btn");
 
         if (mode === "playground") {
-            difficultyEl.style.display = "none";
+            difficultyEl.style.display = "block";
             titleEl.innerText = "🧪 Practice Playground";
-            subtitleEl.innerText = "No pressure — just practice, get a coding problem, and build confidence.";
+            subtitleEl.innerText = "Pick a level, then work through as many coding rounds as you want.";
             startBtn.innerText = "Start Practicing";
-        } else if (mode === "technical_round") {
-            difficultyEl.style.display = "none";
-            titleEl.innerText = "💻 Technical Round";
-            subtitleEl.innerText = "Brief intro, then straight into 5-6 back-to-back coding rounds.";
-            startBtn.innerText = "Start Technical Round";
         } else {
             difficultyEl.style.display = "block";
             titleEl.innerText = "🎯 AI Technical Interview Room";
@@ -278,15 +1010,15 @@
         const role = resolveSelection("role");
 
         if (!language) {
-            document.getElementById("status").innerText = "Please select (or type) your language.";
+            setStatus("Please select (or type) your language.");
             return;
         }
         if (!role) {
-            document.getElementById("status").innerText = "Please select (or type) your role.";
+            setStatus("Please select (or type) your role.");
             return;
         }
 
-        document.getElementById("status").innerText = "Connecting to Python Server...";
+        setStatus("Connecting to Python Server...");
 
         ws = new WebSocket("ws://localhost:8000/media-stream");
         ws.binaryType = "arraybuffer";
@@ -301,7 +1033,8 @@
                 mode: document.getElementById("mode-input").value,
                 language: language,
                 role: role,
-                difficulty: document.getElementById("difficulty-input").value
+                difficulty: document.getElementById("difficulty-input").value,
+                voice: selectedVoice
             };
             ws.send(JSON.stringify(initData));
         };
@@ -314,7 +1047,8 @@
 
         ws.onmessage = async (event) => {
             if (event.data instanceof ArrayBuffer) {
-                document.getElementById("status").innerText = "AI Recruiter is speaking...";
+                setStatus("AI Recruiter is speaking...");
+                markSpeaking();
 
                 const int16Array = new Int16Array(event.data);
                 const audioBuffer = playCtx.createBuffer(1, int16Array.length, 24000);
@@ -353,7 +1087,13 @@
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             micStream = stream;
-            document.getElementById("status").innerText = "Connected! The interviewer will start in a moment...";
+            setStatus("Connected! The interviewer will start in a moment...");
+            enterCallScreen({
+                mode: document.getElementById("mode-input").value,
+                language: language,
+                role: role,
+                difficulty: document.getElementById("difficulty-input").value
+            });
             document.getElementById("start-btn").disabled = true;
             document.getElementById("mode-input").disabled = true;
             document.getElementById("language-input").disabled = true;
@@ -361,6 +1101,8 @@
             document.getElementById("role-input").disabled = true;
             document.getElementById("role-other-input").disabled = true;
             document.getElementById("difficulty-input").disabled = true;
+            document.getElementById("settings-gear").disabled = true;
+            document.getElementById("voice-summary-change").disabled = true;
 
             const source = recordCtx.createMediaStreamSource(stream);
             const processor = recordCtx.createScriptProcessor(8192, 1, 1);
@@ -376,12 +1118,12 @@
                 for (let i = 0; i < inputData.length; i++) {
                     int16Buffer[i] = Math.min(1, Math.max(-1, inputData[i])) * 0x7FFF;
                 }
-                if (ws.readyState === WebSocket.OPEN) {
+                if (ws.readyState === WebSocket.OPEN && !micMuted) {
                     ws.send(int16Buffer.buffer);
                 }
             };
         } catch (err) {
-            document.getElementById("status").innerText = "Error: Access to microphone denied.";
+            setStatus("Error: Access to microphone denied.");
             console.error(err);
         }
     }
